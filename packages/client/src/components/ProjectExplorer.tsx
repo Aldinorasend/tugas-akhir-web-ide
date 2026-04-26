@@ -1,10 +1,10 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import { ChevronRight, ChevronDown, FileCode, Folder, Plus, Trash2, FolderPlus } from "lucide-react";
-import { cn } from "@/lib/utils"; // If available, else simple concat
+import { cn } from "@/lib/utils";
 
-interface FileNode {
+export interface FileNode {
   id: string;
   name: string;
   type: "file" | "folder";
@@ -13,71 +13,47 @@ interface FileNode {
   isOpen?: boolean;
 }
 
-const INITIAL_DATA: FileNode[] = [
-  {
-    id: "root",
-    name: "my-java-project",
-    type: "folder",
-    isOpen: true,
-    children: [
-      {
-        id: "src",
-        name: "src",
-        type: "folder",
-        isOpen: true,
-        children: [
-          {
-            id: "Main.java",
-            name: "Main.java",
-            type: "file",
-            content: "public class Main {\n    public static void main(String[] args) {\n        System.out.println(\"Hello Pathwise!\");\n    }\n}",
-          },
-          {
-            id: "utils",
-            name: "utils",
-            type: "folder",
-            children: [
-              {
-                id: "Helper.java",
-                name: "Helper.java",
-                type: "file",
-                content: "public class Helper {\n    public static void log(String msg) {\n        System.out.println(msg);\n    }\n}",
-              },
-            ],
-          },
-        ],
-      },
-      {
-        id: "pom.xml",
-        name: "pom.xml",
-        type: "file",
-        content: "<!-- Maven Config -->",
-      },
-    ],
-  },
-];
-
 interface ProjectExplorerProps {
-  onFileSelect: (content: string, fileName: string) => void;
+  nodes: FileNode[];
+  selectedId: string;
+  onFileSelect: (node: FileNode) => void;
+  onToggleFolder: (nodeId: string) => void;
+  onAddFile: (parentId: string, name: string) => void;
+  onAddFolder: (parentId: string, name: string) => void;
+  onDelete?: (nodeId: string) => void;
 }
 
-export default function ProjectExplorer({ onFileSelect }: ProjectExplorerProps) {
-  const [nodes, setNodes] = useState<FileNode[]>(INITIAL_DATA);
-  const [selectedId, setSelectedId] = useState<string>("Main.java");
+export default function ProjectExplorer({
+  nodes,
+  selectedId,
+  onFileSelect,
+  onToggleFolder,
+  onAddFile,
+  onAddFolder,
+  onDelete,
+}: ProjectExplorerProps) {
+  const [creating, setCreating] = useState<{ parentId: string; type: "file" | "folder" } | null>(null);
+  const [newName, setNewName] = useState("");
+  const inputRef = useRef<HTMLInputElement>(null);
 
-  const toggleFolder = (nodeId: string) => {
-    const updateNodes = (list: FileNode[]): FileNode[] => {
-      return list.map((node) => {
-        if (node.id === nodeId) {
-          return { ...node, isOpen: !node.isOpen };
-        }
-        if (node.children) {
-          return { ...node, children: updateNodes(node.children) };
-        }
-        return node;
-      });
-    };
-    setNodes(updateNodes(nodes));
+  useEffect(() => {
+    if (creating && inputRef.current) {
+      inputRef.current.focus();
+    }
+  }, [creating]);
+
+  const handleCreate = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newName.trim() || !creating) return;
+
+    if (creating.type === "file") {
+      onAddFile(creating.parentId, newName);
+    } else {
+      onAddFolder(creating.parentId, newName);
+    }
+
+    setCreating(null);
+    setNewName("");
   };
 
   const renderTree = (list: FileNode[], depth = 0) => {
@@ -86,17 +62,16 @@ export default function ProjectExplorer({ onFileSelect }: ProjectExplorerProps) 
         <div
           onClick={() => {
             if (node.type === "folder") {
-              toggleFolder(node.id);
+              onToggleFolder(node.id);
             } else {
-              setSelectedId(node.id);
-              onFileSelect(node.content || "", node.name);
+              onFileSelect(node);
             }
           }}
           className={cn(
             "group flex items-center gap-2 px-3 py-1.5 cursor-pointer text-sm transition-colors",
             selectedId === node.id ? "bg-orange-500/10 text-orange-400" : "text-slate-400 hover:bg-white/5",
-            depth > 0 && "ml-4"
           )}
+          style={{ paddingLeft: `${(depth + 1) * 12}px` }}
         >
           {node.type === "folder" ? (
             <>
@@ -105,12 +80,74 @@ export default function ProjectExplorer({ onFileSelect }: ProjectExplorerProps) 
             </>
           ) : (
             <>
-              <span className="w-3.5" /> {/* alignment */}
+              <span className="w-3.5" />
               <FileCode size={14} className="text-orange-500" />
             </>
           )}
           <span className="flex-1 truncate">{node.name}</span>
+
+          {node.type === "folder" && (
+            <div className="hidden group-hover:flex items-center gap-1">
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setCreating({ parentId: node.id, type: "file" });
+                }}
+                className="p-0.5 hover:bg-white/10 rounded"
+              >
+                <Plus size={12} />
+              </button>
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setCreating({ parentId: node.id, type: "folder" });
+                }}
+                className="p-0.5 hover:bg-white/10 rounded"
+              >
+                <FolderPlus size={12} />
+              </button>
+            </div>
+          )}
+
+          {onDelete && (
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                onDelete(node.id);
+              }}
+              className="hidden group-hover:block p-0.5 hover:text-red-400 rounded"
+            >
+              <Trash2 size={12} />
+            </button>
+          )}
         </div>
+
+        {creating?.parentId === node.id && (
+          <form
+            onSubmit={handleCreate}
+            className="flex items-center gap-2 px-3 py-1.5 ml-4"
+            style={{ paddingLeft: `${(depth + 2) * 12}px` }}
+          >
+            {creating.type === "folder" ? (
+              <Folder size={14} className="text-blue-400" />
+            ) : (
+              <FileCode size={14} className="text-orange-500" />
+            )}
+            <input
+              ref={inputRef}
+              type="text"
+              value={newName}
+              onChange={(e) => setNewName(e.target.value)}
+              onBlur={() => {
+                if (!newName) setCreating(null);
+              }}
+              className="bg-transparent border-none outline-none text-sm text-slate-200 flex-1 w-full"
+              placeholder={creating.type === "file" ? "file.java" : "folder name"}
+              autoFocus
+            />
+          </form>
+        )}
+
         {node.type === "folder" && node.isOpen && node.children && (
           <div className="flex flex-col">{renderTree(node.children, depth + 1)}</div>
         )}
@@ -123,17 +160,50 @@ export default function ProjectExplorer({ onFileSelect }: ProjectExplorerProps) 
       <div className="h-12 px-4 flex items-center justify-between border-b border-white/5 bg-[#181818]">
         <span className="text-xs font-black uppercase tracking-widest text-slate-500">Explorer</span>
         <div className="flex items-center gap-2">
-          <button className="p-1 hover:bg-white/5 rounded text-slate-400" title="New File">
+          <button
+            className="p-1 hover:bg-white/5 rounded text-slate-400"
+            title="New File at Root"
+            onClick={() => setCreating({ parentId: "workspace", type: "file" })}
+          >
             <Plus size={14} />
           </button>
-          <button className="p-1 hover:bg-white/5 rounded text-slate-400" title="New Folder">
+          <button
+            className="p-1 hover:bg-white/5 rounded text-slate-400"
+            title="New Folder at Root"
+            onClick={() => setCreating({ parentId: "workspace", type: "folder" })}
+          >
             <FolderPlus size={14} />
           </button>
         </div>
       </div>
-      
+
       <div className="flex-1 overflow-y-auto py-2">
         {renderTree(nodes)}
+
+        {creating?.parentId === "workspace" && (
+          <form
+            onSubmit={handleCreate}
+            className="flex items-center gap-2 px-3 py-1.5"
+          >
+            {creating.type === "folder" ? (
+              <Folder size={14} className="text-blue-400" />
+            ) : (
+              <FileCode size={14} className="text-orange-500" />
+            )}
+            <input
+              ref={inputRef}
+              type="text"
+              value={newName}
+              onChange={(e) => setNewName(e.target.value)}
+              onBlur={() => {
+                if (!newName) setCreating(null);
+              }}
+              className="bg-transparent border-none outline-none text-sm text-slate-200 flex-1 w-full"
+              placeholder={creating.type === "file" ? "file.java" : "folder name"}
+              autoFocus
+            />
+          </form>
+        )}
       </div>
     </div>
   );
