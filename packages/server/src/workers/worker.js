@@ -33,7 +33,7 @@ new Worker(
     });
 
     return new Promise((resolve) => {
-const command = `docker run --rm -v "${path.resolve(projectDir).replace(/\\/g, "/")}:/app" -w /app eclipse-temurin:17 sh -c "javac *.java && echo -e '${input || ""}' | java ${mainClass}"`;
+    const command = `docker run --rm -v "${path.resolve(projectDir).replace(/\\/g, "/")}:/app" -w /app eclipse-temurin:17 sh -c "javac $(find . -name "*.java") && echo -e '${input || ""}' | java ${mainClass}"`;
      exec(command, { timeout: 5000 }, async (err, stdout, stderr) => {
         console.log("COMMAND:", command);
         console.log("ERROR:", err);
