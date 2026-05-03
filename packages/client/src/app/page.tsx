@@ -1,286 +1,110 @@
 "use client";
 
-import React, { useEffect, useRef, useState, useCallback } from "react";
-import JavaEditor from "@/components/JavaEditor";
-import ScaffoldingPanel from "@/components/ScaffoldingPanel";
-import ProjectExplorer, { FileNode } from "@/components/ProjectExplorer";
-import OutputPanel from "@/components/OutputPanel";
+import React from "react";
+import Link from "next/link";
+import { motion } from "framer-motion";
+import { User, ShieldCheck, ArrowRight, Code, Map } from "lucide-react";
 
-const INITIAL_NODES: FileNode[] = [];
-
-export default function Home() {
-  const socketRef = useRef<WebSocket | null>(null);
-  const [nodes, setNodes] = useState<FileNode[]>(INITIAL_NODES);
-  const [selectedId, setSelectedId] = useState<string>("");
-  const [output, setOutput] = useState<string>("The output will be shown here");
-  const [loading, setLoading] = useState<boolean>(false);
-
-  useEffect(() => {
-    let socket: WebSocket;
-    let reconnectTimeout: NodeJS.Timeout;
-
-    const connect = () => {
-      console.log("🔌 Connecting to WebSocket...");
-      socket = new WebSocket("ws://localhost:8080");
-
-      socket.onopen = () => {
-        console.log("✅ Connected to WebSocket");
-        socketRef.current = socket;
-      };
-
-      socket.onmessage = (event) => {
-        const msg = JSON.parse(event.data);
-        if (msg.type === "output" || msg.type === "error") {
-          setOutput((prev) => prev + msg.data);
-        }
-        if (msg.type === "end") {
-          setLoading(false);
-        }
-      };
-
-      socket.onerror = (error) => {
-        console.error("❌ WebSocket Error:", error);
-      };
-
-      socket.onclose = () => {
-        console.log("🔌 WebSocket disconnected. Reconnecting in 3s...");
-        socketRef.current = null;
-        reconnectTimeout = setTimeout(connect, 3000);
-      };
-    };
-
-    connect();
-
-    return () => {
-      if (socket) socket.close();
-      clearTimeout(reconnectTimeout);
-    };
-  }, []);
-
-  const findNode = useCallback((list: FileNode[], id: string): FileNode | null => {
-    for (const node of list) {
-      if (node.id === id) return node;
-      if (node.children) {
-        const found = findNode(node.children, id);
-        if (found) return found;
-      }
-    }
-    return null;
-  }, []);
-
-  const currentFile = findNode(nodes, selectedId);
-
-  const handleToggleFolder = (nodeId: string) => {
-    const updateNodes = (list: FileNode[]): FileNode[] => {
-      return list.map((node) => {
-        if (node.id === nodeId) return { ...node, isOpen: !node.isOpen };
-        if (node.children) return { ...node, children: updateNodes(node.children) };
-        return node;
-      });
-    };
-    setNodes(updateNodes(nodes));
-  };
-
-  const handleAddFile = (parentId: string, name: string) => {
-    const className = name.replace(".java", "");
-    const packageName = parentId === "workspace" ? "" : parentId.replace(/\//g, ".");
-    
-    let content = "";
-    if (packageName) {
-      content += `package ${packageName};\n\n`;
-    }
-    
-    content += `public class ${className} {\n`;
-    if (className === "Main") {
-      content += `    public static void main(String[] args) {\n        System.out.println("Hello from ${packageName || "root"}!");\n    }\n`;
-    }
-    content += `}`;
-
-    const newNode: FileNode = {
-      id: parentId === "workspace" ? name : `${parentId}/${name}`,
-      name,
-      type: "file",
-      content,
-    };
-
-    if (parentId === "workspace") {
-      setNodes([...nodes, newNode]);
-      return;
-    }
-
-    const updateNodes = (list: FileNode[]): FileNode[] => {
-      return list.map((node) => {
-        if (node.id === parentId) {
-          return { ...node, isOpen: true, children: [...(node.children || []), newNode] };
-        }
-        if (node.children) {
-          return { ...node, children: updateNodes(node.children) };
-        }
-        return node;
-      });
-    };
-    setNodes(updateNodes(nodes));
-    setSelectedId(newNode.id);
-  };
-
-  const handleAddFolder = (parentId: string, name: string) => {
-    const newNode: FileNode = {
-      id: parentId === "workspace" ? name : `${parentId}/${name}`,
-      name,
-      type: "folder",
-      isOpen: true,
-      children: [],
-    };
-
-    if (parentId === "workspace") {
-      setNodes([...nodes, newNode]);
-      return;
-    }
-
-    const updateNodes = (list: FileNode[]): FileNode[] => {
-      return list.map((node) => {
-        if (node.id === parentId) {
-          return { ...node, isOpen: true, children: [...(node.children || []), newNode] };
-        }
-        if (node.children) {
-          return { ...node, children: updateNodes(node.children) };
-        }
-        return node;
-      });
-    };
-    setNodes(updateNodes(nodes));
-  };
-
-  const handleDelete = (nodeId: string) => {
-    const updateNodes = (list: FileNode[]): FileNode[] => {
-      return list
-        .filter((node) => node.id !== nodeId)
-        .map((node) => {
-          if (node.children) return { ...node, children: updateNodes(node.children) };
-          return node;
-        });
-    };
-    setNodes(updateNodes(nodes));
-    if (selectedId === nodeId) setSelectedId("");
-  };
-
-  const handleCodeChange = (newCode: string | undefined) => {
-    if (newCode === undefined) return;
-    const updateNodes = (list: FileNode[]): FileNode[] => {
-      return list.map((node) => {
-        if (node.id === selectedId) return { ...node, content: newCode };
-        if (node.children) return { ...node, children: updateNodes(node.children) };
-        return node;
-      });
-    };
-    setNodes(updateNodes(nodes));
-  };
-
-  const flattenFiles = (list: FileNode[], pathPrefix = ""): { path: string; content: string }[] => {
-    let result: { path: string; content: string }[] = [];
-    for (const node of list) {
-      // Don't include the root folder itself in the path for the runner if it's just a container
-      const currentPath = node.id === "root" ? "" : (pathPrefix ? `${pathPrefix}/${node.name}` : node.name);
-
-      if (node.type === "file") {
-        result.push({ path: currentPath, content: node.content || "" });
-      } else if (node.children) {
-        result = [...result, ...flattenFiles(node.children, currentPath)];
-      }
-    }
-    return result;
-  };
-
-  const runCode = () => {
-    if (!socketRef.current || socketRef.current.readyState !== WebSocket.OPEN) {
-      console.error("❌ WebSocket not connected");
-      return;
-    }
-
-    setOutput("Output:\n");
-    setLoading(true);
-
-    const filesToSend = flattenFiles(nodes);
-
-    // Get the directory of the currently selected file
-    const currentFileNode = findNode(nodes, selectedId);
-    const currentDirPath = selectedId.includes("/") 
-      ? selectedId.split("/").slice(0, -1).join("/") 
-      : "";
-
-    // Prioritize Main.java in the current directory
-    let mainFile = filesToSend.find(f => f.path === (currentDirPath ? `${currentDirPath}/Main.java` : "Main.java"));
-    
-    // Fallback: search for ANY Main.java in the project
-    if (!mainFile) {
-      mainFile = filesToSend.find(f => f.path.endsWith("Main.java"));
-    }
-    
-    let mainClass = "Main";
-    if (mainFile) {
-      // Convert path to class name (e.g., "poly_1/Main.java" -> "poly_1.Main")
-      mainClass = mainFile.path
-        .replace(/\.java$/, "")
-        .replace(/\//g, ".");
-    } else if (filesToSend.length > 0) {
-      mainClass = filesToSend[0].path
-        .replace(/\.java$/, "")
-        .replace(/\//g, ".");
-    }
-
-    socketRef.current.send(
-      JSON.stringify({
-        type: "run",
-        mainClass,
-        files: filesToSend,
-      })
-    );
-  };
-
-  const sendInput = (value: string) => {
-    socketRef.current?.send(JSON.stringify({ type: "input", data: value }));
-    setOutput((prev) => prev + value + "\n");
-  };
-
+export default function LandingPage() {
   return (
-    <main className="flex flex-row h-screen border border-orange-800">
-      <ProjectExplorer
-        nodes={nodes}
-        selectedId={selectedId}
-        onFileSelect={(node) => setSelectedId(node.id)}
-        onToggleFolder={handleToggleFolder}
-        onAddFile={handleAddFile}
-        onAddFolder={handleAddFolder}
-        onDelete={handleDelete}
-      />
-
-      <div className="flex flex-1 flex-col">
-        <JavaEditor
-          code={currentFile?.content || ""}
-          fileName={currentFile?.name || "No file selected"}
-          onCodeChange={handleCodeChange}
-          onRun={runCode}
-        />
-
-        <OutputPanel
-          output={output}
-          onClear={() => setOutput("")}
-        />
-
-        <input
-          placeholder="Type input and press Enter..."
-          className="bg-black text-green-400 p-2 border-t border-gray-700 outline-none"
-          onKeyDown={(e) => {
-            if (e.key === "Enter") {
-              sendInput(e.currentTarget.value);
-              e.currentTarget.value = "";
-            }
-          }}
-        />
+    <div className="min-h-screen bg-[#0f172a] text-white flex flex-col items-center justify-center p-6 relative overflow-hidden">
+      {/* Background Decorative Elements */}
+      <div className="absolute top-0 left-0 w-full h-full overflow-hidden -z-10">
+        <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-blue-600/20 blur-[120px] rounded-full" />
+        <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-indigo-600/20 blur-[120px] rounded-full" />
       </div>
 
-      <ScaffoldingPanel />
-    </main>
+      <motion.div 
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.8 }}
+        className="text-center mb-16"
+      >
+        <div className="flex items-center justify-center gap-3 mb-6">
+          <div className="bg-blue-600 p-3 rounded-2xl shadow-xl shadow-blue-500/20">
+            <Map className="text-white" size={32} />
+          </div>
+          <h1 className="text-5xl font-extrabold tracking-tighter bg-clip-text text-transparent bg-gradient-to-r from-white to-slate-400">
+            Pathwise
+          </h1>
+        </div>
+        <p className="text-slate-400 text-lg max-w-lg mx-auto">
+          The interactive Java learning platform that maps your journey from <span className="text-blue-400 font-semibold">Diagram</span> to <span className="text-blue-400 font-semibold">Code</span>.
+        </p>
+      </motion.div>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-8 w-full max-w-4xl">
+        {/* Student Portal Card */}
+        <motion.div
+          whileHover={{ scale: 1.02, translateY: -5 }}
+          whileTap={{ scale: 0.98 }}
+          className="group"
+        >
+          <Link href="/student">
+            <div className="h-full p-8 bg-slate-800/50 backdrop-blur-xl border border-slate-700 rounded-3xl transition-all group-hover:border-blue-500/50 group-hover:bg-slate-800/80 shadow-2xl relative overflow-hidden">
+              <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
+                <Code size={120} />
+              </div>
+              
+              <div className="bg-blue-500/10 p-4 rounded-2xl w-fit mb-6 text-blue-400 group-hover:bg-blue-500 group-hover:text-white transition-all">
+                <User size={32} />
+              </div>
+              
+              <h2 className="text-2xl font-bold mb-2">Student Portal</h2>
+              <p className="text-slate-400 mb-8 leading-relaxed">
+                Analyze study cases, build UML class diagrams, and implement your solution in our Java IDE.
+              </p>
+              
+              <div className="flex items-center gap-2 text-blue-400 font-bold group-hover:gap-4 transition-all">
+                Start Learning <ArrowRight size={20} />
+              </div>
+            </div>
+          </Link>
+        </motion.div>
+
+        {/* Lecturer Portal Card */}
+        <motion.div
+          whileHover={{ scale: 1.02, translateY: -5 }}
+          whileTap={{ scale: 0.98 }}
+          className="group"
+        >
+          <Link href="/lecturer">
+            <div className="h-full p-8 bg-slate-800/50 backdrop-blur-xl border border-slate-700 rounded-3xl transition-all group-hover:border-orange-500/50 group-hover:bg-slate-800/80 shadow-2xl relative overflow-hidden">
+              <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
+                <ShieldCheck size={120} />
+              </div>
+
+              <div className="bg-orange-500/10 p-4 rounded-2xl w-fit mb-6 text-orange-400 group-hover:bg-orange-500 group-hover:text-white transition-all">
+                <ShieldCheck size={32} />
+              </div>
+              
+              <h2 className="text-2xl font-bold mb-2">Lecturer Portal</h2>
+              <p className="text-slate-400 mb-8 leading-relaxed">
+                Create new study cases, define reference class diagrams, and manage the curriculum.
+              </p>
+              
+              <div className="flex items-center gap-2 text-orange-400 font-bold group-hover:gap-4 transition-all">
+                Manage Cases <ArrowRight size={20} />
+              </div>
+            </div>
+          </Link>
+        </motion.div>
+      </div>
+
+      {/* Footer */}
+      <motion.div 
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ delay: 1, duration: 1 }}
+        className="mt-20 text-slate-500 text-sm flex gap-6"
+      >
+        <span>&copy; 2026 Pathwise Educational IDE</span>
+        <span className="text-slate-700">|</span>
+        <a href="#" className="hover:text-white transition-colors">Documentation</a>
+        <a href="#" className="hover:text-white transition-colors">Privacy Policy</a>
+      </motion.div>
+    </div>
   );
 }
+
 

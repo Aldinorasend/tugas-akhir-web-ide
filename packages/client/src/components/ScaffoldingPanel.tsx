@@ -4,7 +4,28 @@ import React from "react";
 import { Lightbulb, MessageSquare, Flame, Sparkles, TrendingUp } from "lucide-react";
 import { motion } from "framer-motion";
 
-export default function ScaffoldingPanel() {
+type ScaffoldingPanelProps = {
+  mode?: "diagram" | "code";
+};
+
+export default function ScaffoldingPanel({ mode = "code" }: ScaffoldingPanelProps) {
+  const content = {
+    diagram: {
+      l1: "Pikirkan atribut apa saja yang dimiliki oleh kelas `Hewan`. Coba gunakan modifier `private` untuk encapsulation.",
+      l2: "Apa perbedaan antara `extends` dan `implements`? Kapan kamu menggunakan masing-masing?",
+      l3: "Kamu sudah menambahkan beberapa class. Tinggal sedikit lagi! 🔥",
+      xp: "+15 XP"
+    },
+    code: {
+      l1: "Coba gunakan Scanner(System.in) untuk menerima input dari pengguna. Pastikan import di baris pertama!",
+      l2: "Apa yang terjadi jika variabel count bernilai negatif?",
+      l3: "Kamu sudah coding selama 15 menit tanpa henti. Fokusmu luar biasa! Teruskan 🔥",
+      xp: "+12 XP"
+    }
+  };
+
+  const active = content[mode];
+
   return (
     <div className="flex flex-col gap-6 p-6 h-full bg-[#0f1117] text-white border-l border-white/5 w-[380px] overflow-y-auto">
       <div className="flex items-center justify-between mb-2">
@@ -28,8 +49,8 @@ export default function ScaffoldingPanel() {
               <Lightbulb size={18} />
               <h3 className="text-xs font-black uppercase tracking-widest">L1 • Smart Hint</h3>
             </div>
-            <p className="text-sm text-slate-300 leading-relaxed font-medium capitalize">
-              Coba gunakan <code className="bg-white/5 px-1.5 py-0.5 rounded text-orange-400">Scanner(System.in)</code> untuk menerima input dari pengguna. Pastikan import di baris pertama!
+            <p className="text-sm text-slate-300 leading-relaxed font-medium">
+              {active.l1}
             </p>
           </div>
         </section>
@@ -47,7 +68,7 @@ export default function ScaffoldingPanel() {
               <h3 className="text-xs font-black uppercase tracking-widest">L2 • Reflection</h3>
             </div>
             <p className="text-sm text-slate-300 mb-4 font-medium italic">
-              "Apa yang terjadi jika variabel <code className="text-indigo-400 font-mono">count</code> bernilai negatif?"
+              "{active.l2}"
             </p>
             <div className="flex flex-col gap-2">
               <input 
@@ -70,19 +91,20 @@ export default function ScaffoldingPanel() {
                 <TrendingUp size={18} />
                 <h3 className="text-xs font-black uppercase tracking-widest">L3 • Momentum</h3>
               </div>
-              <span className="text-[10px] font-bold text-green-500 bg-green-500/10 px-2 py-0.5 rounded-full">+12 XP</span>
+              <span className="text-[10px] font-bold text-green-500 bg-green-500/10 px-2 py-0.5 rounded-full">{active.xp}</span>
             </div>
             <p className="text-sm font-semibold tracking-wide text-slate-200">
-              Kamu sudah coding selama 15 menit tanpa henti. Fokusmu luar biasa! Teruskan 🔥
+              {active.l3}
             </p>
           </div>
         </section>
       </div>
 
       <div className="mt-auto pt-4 border-t border-white/5 flex items-center justify-between opacity-50 text-[10px] font-bold uppercase tracking-widest">
-        <span>Session: Java Basics</span>
+        <span>Mode: {mode === "diagram" ? "OOP Design" : "Java Coding"}</span>
         <span>ID: PATH-882</span>
       </div>
     </div>
   );
 }
+
