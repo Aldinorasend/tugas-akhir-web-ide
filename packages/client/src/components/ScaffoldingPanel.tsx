@@ -58,7 +58,7 @@ export default function ScaffoldingPanel({ mode = "code" }: ScaffoldingPanelProp
         {/* L2: Reflection */}
         <section className="relative group">
           <div className="absolute -inset-0.5 bg-gradient-to-r from-indigo-500 to-purple-500 rounded-2xl blur opacity-20 group-hover:opacity-40 transition duration-1000"></div>
-          <motion.div 
+          <motion.div
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             className="relative bg-[#1a1c23]/80 backdrop-blur-xl p-5 rounded-2xl border border-indigo-500/20 shadow-2xl"
@@ -71,9 +71,9 @@ export default function ScaffoldingPanel({ mode = "code" }: ScaffoldingPanelProp
               "{active.l2}"
             </p>
             <div className="flex flex-col gap-2">
-              <input 
-                type="text" 
-                placeholder="Tulis pemikiranmu..." 
+              <input
+                type="text"
+                placeholder="Tulis pemikiranmu..."
                 className="bg-black/20 border border-white/5 rounded-lg px-3 py-2 text-xs focus:outline-none focus:border-indigo-500/50 transition-all"
               />
               <button className="bg-indigo-600 hover:bg-indigo-500 text-white text-[10px] font-bold py-1.5 rounded-lg transition-all active:scale-95 uppercase tracking-wider">
@@ -100,10 +100,7 @@ export default function ScaffoldingPanel({ mode = "code" }: ScaffoldingPanelProp
         </section>
       </div>
 
-      <div className="mt-auto pt-4 border-t border-white/5 flex items-center justify-between opacity-50 text-[10px] font-bold uppercase tracking-widest">
-        <span>Mode: {mode === "diagram" ? "OOP Design" : "Java Coding"}</span>
-        <span>ID: PATH-882</span>
-      </div>
+
     </div>
   );
 }

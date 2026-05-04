@@ -53,14 +53,7 @@ export default function Toolbar({
 
       <div className="w-px h-8 bg-slate-700" />
 
-      {/* Submit Button */}
-      <button
-        onClick={onSubmit}
-        className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-xl hover:from-blue-500 hover:to-indigo-500 transition-all active:scale-95 shadow-lg shadow-blue-500/20 font-bold text-sm"
-      >
-        <CheckCircle size={18} />
-        Submit
-      </button>
+
     </div>
   );
 }

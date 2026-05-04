@@ -24,3 +24,37 @@ export const publishStudyCase = async (
     if (error) throw error;
     return data;
 };
+
+
+export const getRandomStudyCase = async () => {
+    const { count, error: countError } = await supabase
+        .from('study_cases')
+        .select('*', { count: 'exact', head: true })
+        .eq('is_active', true);
+
+    if (countError) throw countError;
+    if (count === 0 || count === null) return null;
+
+    const randomIndex = Math.floor(Math.random() * count);
+
+    const { data, error: fetchError } = await supabase
+        .from('study_cases')
+        .select('*')
+        .eq('is_active', true)
+        .range(randomIndex, randomIndex)
+        .single();
+
+    if (fetchError) throw fetchError;
+    return data;
+};
+
+export const getStudyCaseById = async (id: string) => {
+    const { data, error } = await supabase
+        .from('study_cases')
+        .select('*')
+        .eq('id', id)
+        .single();
+
+    if (error) throw error;
+    return data;
+};
