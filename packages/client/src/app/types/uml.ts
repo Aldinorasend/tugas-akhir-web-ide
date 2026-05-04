@@ -22,6 +22,7 @@ export type UMLClassData = {
   isInterface?: boolean;
   attributes: Attribute[];
   methods: Method[];
+
   // Callback handlers for internal node interactions
   onUpdate?: (id: string, data: Partial<UMLClassData>) => void;
   onDelete?: (id: string) => void;
@@ -52,4 +53,4 @@ export interface StudyCase {
   description: string;
   answerKey: ClassDiagram;
   createdAt: string;
-}
+}

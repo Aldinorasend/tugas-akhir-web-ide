@@ -6,6 +6,7 @@ import ClassNode from "./ClassNode";
 import CustomEdge, { MarkerDefinitions } from "./CustomEdge";
 import Toolbar from "./Toolbar";
 import "reactflow/dist/style.css";
+import { forwardRef, useImperativeHandle } from "react";
 
 const nodeTypes = {
   classNode: ClassNode,
@@ -15,30 +16,31 @@ const edgeTypes = {
   customEdge: CustomEdge,
 };
 
-function DiagramInner() {
+const DiagramInner = forwardRef((props, ref) => {
   const {
-    nodes,
-    edges,
-    onNodesChange,
-    onEdgesChange,
-    onConnect,
-    addClass,
-    selectedRelation,
-    setSelectedRelation,
+    nodes, edges, onNodesChange, onEdgesChange,
+    onConnect, addClass, selectedRelation, setSelectedRelation,
   } = useDiagram();
 
+  // This is the magic part: it makes 'nodes' and 'edges' 
+  // available to whoever holds a reference to this component.
+  useImperativeHandle(ref, () => ({
+    getSnapshot: () => ({ nodes, edges })
+  }));
+
   const handleSubmit = () => {
-    console.log("Submitting diagram:", { nodes, edges });
-    alert("Diagram submitted! Checking with answer key...");
+    // We'll move the actual Supabase call to the LecturerPage, 
+    // but you can keep this for local feedback.
+    console.log("Canvas snapshot captured.");
   };
 
   return (
     <div className="w-full h-full relative bg-slate-950">
       <MarkerDefinitions />
-      
+
       {/* Toolbar */}
-      <Toolbar 
-        onAddClass={addClass} 
+      <Toolbar
+        onAddClass={addClass}
         selectedRelation={selectedRelation}
         onRelationChange={setSelectedRelation}
         onSubmit={handleSubmit}
@@ -58,7 +60,7 @@ function DiagramInner() {
         style={{ background: "transparent" }}
       >
         <Background color="#334155" gap={30} variant={BackgroundVariant.Dots} />
-        <Controls 
+        <Controls
           className="bg-slate-900 border border-slate-700 rounded-lg overflow-hidden shadow-2xl scale-110 origin-bottom-left !left-6 !bottom-6"
           showInteractive={false}
         >
@@ -83,13 +85,13 @@ function DiagramInner() {
 
     </div>
   );
-}
+});
 
-export default function DiagramCanvas() {
+export default forwardRef(function DiagramCanvas(props, ref) {
   return (
     <ReactFlowProvider>
-      <DiagramInner />
+      <DiagramInner ref={ref} />
     </ReactFlowProvider>
   );
-}
-
+});
+
