@@ -92,6 +92,7 @@ export function useDiagram() {
     onEdgesChange,
     onConnect,
     setNodes,
+    setEdges,
     onUpdateNode,
     onDeleteNode,
     addClass,

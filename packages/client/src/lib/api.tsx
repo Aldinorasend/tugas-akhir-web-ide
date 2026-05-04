@@ -14,7 +14,9 @@ export const publishStudyCase = async (
                 description,
                 // The diagram object is stored directly in the JSONB column
                 answer_key: diagram,
-                pass_threshold: 0.7, // Default threshold for your thesis project
+                pass_threshold: 0.7,
+                is_active: true,
+                // Default threshold for your thesis project
             }
         ])
         .select();

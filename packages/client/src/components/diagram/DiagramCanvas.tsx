@@ -20,12 +20,17 @@ const DiagramInner = forwardRef((props, ref) => {
   const {
     nodes, edges, onNodesChange, onEdgesChange,
     onConnect, addClass, selectedRelation, setSelectedRelation,
+    setNodes, setEdges,
   } = useDiagram();
 
   // This is the magic part: it makes 'nodes' and 'edges' 
   // available to whoever holds a reference to this component.
   useImperativeHandle(ref, () => ({
-    getSnapshot: () => ({ nodes, edges })
+    getSnapshot: () => ({ nodes, edges }),
+    setDiagram: (newNodes: any, newEdges: any) => {
+      setNodes(newNodes);
+      setEdges(newEdges);
+    }
   }));
 
   const handleSubmit = () => {

@@ -24,6 +24,7 @@ export type UMLClassData = {
   methods: Method[];
 
   // Callback handlers for internal node interactions
+  readOnly?: boolean;
   onUpdate?: (id: string, data: Partial<UMLClassData>) => void;
   onDelete?: (id: string) => void;
 };
