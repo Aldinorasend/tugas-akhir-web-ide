@@ -4,50 +4,57 @@ export const gradeDiagram = (answerKey: any, studentDiagram: any) => {
 
     let points = 0;
     let maxPoints = 0;
+    const feedbacks: string[] = [];
 
-    // 1. Loop ONLY through the Master Nodes to set the ceiling (Max Points)
     masterNodes.forEach((mNode: any) => {
-        // 1 point for the Class existing
-        maxPoints += 1;
-
-        // Calculate max points for attributes and methods in this class
+        maxPoints += 1; // Poin Class
         maxPoints += (mNode.data.attributes?.length || 0);
         maxPoints += (mNode.data.methods?.length || 0);
 
-        // 2. Find if the student has this specific class
         const sNode = studentNodes.find(
             (sn: any) => sn.data.name.toLowerCase().trim() === mNode.data.name.toLowerCase().trim()
         );
 
-        if (sNode) {
-            points += 1; // Student gets the point for the class
+        if (!sNode) {
+            feedbacks.push(`Class "${mNode.data.name}" belum ditemukan.`);
+        } else {
+            points += 1;
 
-            // 3. Check Attributes (Student can only earn what is in the Master)
+            // Cek Attributes
             mNode.data.attributes?.forEach((mAttr: any) => {
                 const hasAttr = sNode.data.attributes?.some(
                     (sa: any) =>
                         sa.name.toLowerCase().trim() === mAttr.name.toLowerCase().trim() &&
                         sa.type.toLowerCase().trim() === mAttr.type.toLowerCase().trim()
                 );
-                if (hasAttr) points += 1;
+                if (hasAttr) {
+                    points += 1;
+                } else {
+                    feedbacks.push(`Di Class ${mNode.data.name}, atribut "${mAttr.name}: ${mAttr.type}" belum sesuai.`);
+                }
             });
 
-            // 4. Check Methods
+            // Cek Methods
             mNode.data.methods?.forEach((mMet: any) => {
                 const hasMet = sNode.data.methods?.some(
                     (sm: any) =>
                         sm.name.toLowerCase().trim() === mMet.name.toLowerCase().trim() &&
                         sm.returnType.toLowerCase().trim() === mMet.returnType.toLowerCase().trim()
                 );
-                if (hasMet) points += 1;
+                if (hasMet) {
+                    points += 1;
+                } else {
+                    feedbacks.push(`Di Class ${mNode.data.name}, method "${mMet.name}(): ${mMet.returnType}" belum sesuai.`);
+                }
             });
         }
     });
 
-    // Final Safety Check
-    if (maxPoints === 0) return 0;
+    const score = maxPoints === 0 ? 0 : Math.min(points / maxPoints, 1);
 
-    // Return a decimal (0.0 to 1.0)
-    const finalScore = points / maxPoints;
-    return Math.min(finalScore, 1); // Ensure it never goes above 100%
+    return {
+        score,
+        feedbacks, // Daftar kekurangan
+        isPassed: score >= (answerKey.pass_threshold || 0.7)
+    };
 };

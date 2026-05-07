@@ -27,10 +27,12 @@ const DiagramInner = forwardRef((props, ref) => {
   // available to whoever holds a reference to this component.
   useImperativeHandle(ref, () => ({
     getSnapshot: () => ({ nodes, edges }),
+    setNodes: (newNodes: any) => setNodes(newNodes),
     setDiagram: (newNodes: any, newEdges: any) => {
       setNodes(newNodes);
       setEdges(newEdges);
     }
+
   }));
 
   const handleSubmit = () => {
