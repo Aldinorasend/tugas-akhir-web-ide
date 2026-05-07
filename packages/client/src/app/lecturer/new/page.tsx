@@ -1,8 +1,6 @@
 "use client";
 
-import DiagramCanvas from "@/components/diagram/DiagramCanvas";
-import { useDiagram } from "@/hooks/useDiagram";
-import { publishStudyCase } from "@/lib/api";
+import DiagramCanvas, { DiagramCanvasRef } from "@/components/diagram/DiagramCanvas";
 import { supabase } from "@/lib/supabase";
 import { useRef, useState } from "react";
 import { Rocket, Info, ChevronRight, Save } from "lucide-react";
@@ -10,7 +8,8 @@ import { Rocket, Info, ChevronRight, Save } from "lucide-react";
 export default function NewStudyCasePage() {
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
-  const diagramRef = useRef<any>(null);
+  const [category, setCategory] = useState("inheritance");
+  const diagramRef = useRef<DiagramCanvasRef>(null);
   const [loading, setLoading] = useState(false);
 
   const handlePublish = async () => {
@@ -30,6 +29,7 @@ export default function NewStudyCasePage() {
         .insert([{
           title,
           description,
+          category,
           answer_key: snapshot,
         }]);
 
@@ -72,6 +72,22 @@ export default function NewStudyCasePage() {
               placeholder="e.g. Animal Polymorphism"
               className="w-full p-3 bg-slate-800/50 border border-slate-700 rounded-xl outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500/50 transition-all text-white placeholder:text-slate-600 shadow-inner"
             />
+          </div>
+
+          <div>
+            <label className="block text-[10px] font-black text-slate-500 uppercase tracking-widest mb-2 px-1 flex items-center gap-2">
+              <ChevronRight className="w-3 h-3" /> Category / OOP Type
+            </label>
+            <select
+              value={category}
+              onChange={(e) => setCategory(e.target.value)}
+              className="w-full p-3 bg-slate-800/50 border border-slate-700 rounded-xl outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500/50 transition-all text-sm text-slate-300 shadow-inner cursor-pointer"
+            >
+              <option value="inheritance">Inheritance</option>
+              <option value="polymorphism">Polymorphism</option>
+              <option value="encapsulation">Encapsulation</option>
+              <option value="abstraction">Abstraction</option>
+            </select>
           </div>
 
           <div>

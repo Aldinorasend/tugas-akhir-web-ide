@@ -1,6 +1,6 @@
 "use client";
 
-import DiagramCanvas from "@/components/diagram/DiagramCanvas";
+import DiagramCanvas, { DiagramCanvasRef } from "@/components/diagram/DiagramCanvas";
 import { supabase } from "@/lib/supabase";
 import { useEffect, useRef, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
@@ -11,47 +11,49 @@ export default function EditStudyCasePage() {
   const router = useRouter();
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
-  const diagramRef = useRef<any>(null);
+  const [category, setCategory] = useState("inheritance");
+  const diagramRef = useRef<DiagramCanvasRef>(null);
   const [loading, setLoading] = useState(true);
   const [updating, setUpdating] = useState(false);
   const [status, setStatus] = useState("");
 
   useEffect(() => {
-    fetchStudyCase();
-  }, [id]);
+    const fetchStudyCase = async () => {
+      setLoading(true);
+      try {
+        const { data, error } = await supabase
+          .from('study_cases')
+          .select('*')
+          .eq('id', id)
+          .single();
 
-  const fetchStudyCase = async () => {
-    setLoading(true);
-    try {
-      const { data, error } = await supabase
-        .from('study_cases')
-        .select('*')
-        .eq('id', id)
-        .single();
+        if (error) throw error;
 
-      if (error) throw error;
-
-      if (data) {
-        setTitle(data.title);
-        setDescription(data.description);
-        setStatus(data.is_active);
-        // Wait a bit for the canvas to mount before setting diagram
-        setTimeout(() => {
-          if (diagramRef.current) {
-            diagramRef.current.setDiagram(
-              data.answer_key?.nodes || [],
-              data.answer_key?.edges || []
-            );
-          }
-        }, 500);
+        if (data) {
+          setTitle(data.title);
+          setDescription(data.description);
+          setStatus(data.is_active);
+          setCategory(data.category || "inheritance");
+          // Wait a bit for the canvas to mount before setting diagram
+          setTimeout(() => {
+            if (diagramRef.current) {
+              diagramRef.current.setDiagram(
+                data.answer_key?.nodes || [],
+                data.answer_key?.edges || []
+              );
+            }
+          }, 500);
+        }
+      } catch (err: unknown) {
+        alert("Error fetching study case: " + (err as Error).message);
+        router.push("/lecturer");
+      } finally {
+        setLoading(false);
       }
-    } catch (err: any) {
-      alert("Error fetching study case: " + err.message);
-      router.push("/lecturer");
-    } finally {
-      setLoading(false);
-    }
-  };
+    };
+
+    fetchStudyCase();
+  }, [id, router]);
 
   const handleUpdate = async () => {
     setUpdating(true);
@@ -68,6 +70,7 @@ export default function EditStudyCasePage() {
         .update({
           title,
           description,
+          category,
           answer_key: snapshot,
           is_active: status,
         })
@@ -139,6 +142,22 @@ export default function EditStudyCasePage() {
               placeholder="Describe the scenario for students..."
               className="w-full p-3 bg-slate-800/50 border border-slate-700 rounded-xl outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500/50 transition-all text-sm text-slate-300 placeholder:text-slate-600 resize-none shadow-inner"
             />
+          </div>
+
+          <div>
+            <label className="block text-[10px] font-black text-slate-500 uppercase tracking-widest mb-2 px-1 flex items-center gap-2">
+              <ChevronRight className="w-3 h-3" /> Category / OOP Type
+            </label>
+            <select
+              value={category}
+              onChange={(e) => setCategory(e.target.value)}
+              className="w-full p-3 bg-slate-800/50 border border-slate-700 rounded-xl outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500/50 transition-all text-sm text-slate-300 shadow-inner cursor-pointer"
+            >
+              <option value="inheritance">Inheritance</option>
+              <option value="polymorphism">Polymorphism</option>
+              <option value="encapsulation">Encapsulation</option>
+              <option value="abstraction">Abstraction</option>
+            </select>
           </div>
 
           <div>

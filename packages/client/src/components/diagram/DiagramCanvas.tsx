@@ -2,11 +2,14 @@
 
 import { useDiagram } from "@/hooks/useDiagram";
 import ReactFlow, { Background, Controls, ReactFlowProvider, BackgroundVariant } from "reactflow";
+import "reactflow/dist/style.css";
 import ClassNode from "./ClassNode";
 import CustomEdge, { MarkerDefinitions } from "./CustomEdge";
 import Toolbar from "./Toolbar";
-import "reactflow/dist/style.css";
-import { forwardRef, useImperativeHandle } from "react";
+import { UMLNode, UMLEdge } from "@/app/types/uml";
+import { forwardRef, useImperativeHandle, ForwardedRef } from "react";
+
+import { saveDiagramState, transformToLogicRules } from "@/lib/umlUtils";
 
 const nodeTypes = {
   classNode: ClassNode,
@@ -16,7 +19,15 @@ const edgeTypes = {
   customEdge: CustomEdge,
 };
 
-const DiagramInner = forwardRef((props, ref) => {
+export interface DiagramCanvasRef {
+  getSnapshot: () => { nodes: UMLNode[]; edges: UMLEdge[] };
+  getSerializedState: () => string;
+  getLogicRules: () => ReturnType<typeof transformToLogicRules>;
+  setNodes: (newNodes: UMLNode[]) => void;
+  setDiagram: (newNodes: UMLNode[], newEdges: UMLEdge[]) => void;
+}
+
+const DiagramInner = forwardRef((props: any, ref: ForwardedRef<DiagramCanvasRef>) => {
   const {
     nodes, edges, onNodesChange, onEdgesChange,
     onConnect, addClass, selectedRelation, setSelectedRelation,
@@ -27,13 +38,16 @@ const DiagramInner = forwardRef((props, ref) => {
   // available to whoever holds a reference to this component.
   useImperativeHandle(ref, () => ({
     getSnapshot: () => ({ nodes, edges }),
-    setNodes: (newNodes: any) => setNodes(newNodes),
-    setDiagram: (newNodes: any, newEdges: any) => {
+    getSerializedState: () => saveDiagramState(nodes, edges),
+    getLogicRules: () => transformToLogicRules(nodes, edges),
+    setNodes: (newNodes: UMLNode[]) => setNodes(newNodes),
+    setDiagram: (newNodes: UMLNode[], newEdges: UMLEdge[]) => {
       setNodes(newNodes);
       setEdges(newEdges);
     }
-
   }));
+
+  DiagramInner.displayName = "DiagramInner";
 
   const handleSubmit = () => {
     // We'll move the actual Supabase call to the LecturerPage, 
@@ -94,7 +108,7 @@ const DiagramInner = forwardRef((props, ref) => {
   );
 });
 
-export default forwardRef(function DiagramCanvas(props, ref) {
+export default forwardRef(function DiagramCanvas(props: any, ref: ForwardedRef<DiagramCanvasRef>) {
   return (
     <ReactFlowProvider>
       <DiagramInner ref={ref} />
