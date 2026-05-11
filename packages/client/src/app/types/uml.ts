@@ -54,10 +54,6 @@ export interface StudyCase {
   title: string;
   description: string;
   category?: string;
-  is_active?: boolean | string;
-  answer_key: {
-    nodes: UMLNode[];
-    edges: UMLEdge[];
-  };
+  diagram_rules: ClassDiagram;
   created_at: string;
 }

@@ -1,36 +1,53 @@
 // lib/api.ts
 import { supabase } from "./supabase";
+const API_URL = "http://localhost:4000/api";
 
-export const publishStudyCase = async (
-    title: string,
-    description: string,
-    diagram: { nodes: any[]; edges: any[] }
-) => {
-    const { data, error } = await supabase
-        .from('study_cases')
-        .insert([
-            {
-                title,
-                description,
-                // The diagram object is stored directly in the JSONB column
-                answer_key: diagram,
-                pass_threshold: 0.7,
-                is_active: true,
-                // Default threshold for your thesis project
-            }
-        ])
-        .select();
+export const getAllStudyCases = async () => {
+    const response = await fetch(`${API_URL}/study-cases`, {
+        method: 'GET',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+    });
+    if (!response.ok) {
+        throw new Error('Gagal mengambil data dari server');
+    }
 
-    if (error) throw error;
-    return data;
-};
+    return response.json();
+}
 
+export const getStudyCaseById = async (id: string) => {
+    const response = await fetch(`${API_URL}/study-cases/${id}`, {
+        method: 'GET',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+    });
+    if (!response.ok) {
+        throw new Error('Gagal mengambil data dari server');
+    }
+
+    return response.json();
+}
+
+export const createStudyCase = async (studyCase: any) => {
+    const response = await fetch(`${API_URL}/study-cases`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(studyCase),
+    });
+    if (!response.ok) {
+        throw new Error('Gagal membuat study case');
+    }
+    return response.json();
+}
 
 export const getRandomStudyCase = async () => {
     const { count, error: countError } = await supabase
         .from('study_cases')
         .select('*', { count: 'exact', head: true })
-        .eq('is_active', true);
 
     if (countError) throw countError;
     if (count === 0 || count === null) return null;
@@ -48,13 +65,29 @@ export const getRandomStudyCase = async () => {
     return data;
 };
 
-export const getStudyCaseById = async (id: string) => {
-    const { data, error } = await supabase
-        .from('study_cases')
-        .select('*')
-        .eq('id', id)
-        .single();
+export const updateStudyCase = async (id: string, studyCase: any) => {
+    const response = await fetch(`${API_URL}/study-cases/${id}`, {
+        method: 'PUT',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(studyCase),
+    });
+    if (!response.ok) {
+        throw new Error('Gagal memperbarui study case');
+    }
+    return response.json();
+};
 
-    if (error) throw error;
-    return data;
+export const deleteStudyCase = async (id: string) => {
+    const response = await fetch(`${API_URL}/study-cases/${id}`, {
+        method: 'DELETE',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+    });
+    if (!response.ok) {
+        throw new Error('Gagal menghapus study case');
+    }
+    return response.json();
 };

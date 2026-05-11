@@ -2,12 +2,15 @@
 
 import DiagramCanvas, { DiagramCanvasRef } from "@/components/diagram/DiagramCanvas";
 import { supabase } from "@/lib/supabase";
+import { getStudyCaseById, updateStudyCase } from "@/lib/api"
+
 import { useEffect, useRef, useState, useCallback } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { Edit3, Info, ChevronRight, Save, Loader2, ArrowLeft, Code, Sparkles, Terminal } from "lucide-react";
 import ProjectExplorer, { FileNode } from "@/components/ProjectExplorer";
 import JavaEditor from "@/components/JavaEditor";
 import OutputPanel from "@/components/OutputPanel";
+import { useSocket } from "@/hooks/useWebsocket";
 
 export default function EditStudyCasePage() {
   const { id } = useParams();
@@ -21,8 +24,8 @@ export default function EditStudyCasePage() {
   const [updating, setUpdating] = useState(false);
   const [status, setStatus] = useState("");
   const [activeTab, setActiveTab] = useState<"diagram" | "code">("diagram");
-
-  // Multi-file Workspace States
+  const [initial_code, setInitialCode] = useState("");
+  const { output, isRunning, runJavaCode } = useSocket();  // Multi-file Workspace States
   const [nodes, setNodes] = useState<FileNode[]>([
     {
       id: "Main.java",
@@ -32,42 +35,56 @@ export default function EditStudyCasePage() {
     },
   ]);
   const [selectedId, setSelectedId] = useState<string>("Main.java");
-  const [output, setOutput] = useState<string>("Execution output will be shown here...");
-  const [running, setRunning] = useState<boolean>(false);
-  const socketRef = useRef<WebSocket | null>(null);
+
 
   // Fetch Study Case
   useEffect(() => {
     const fetchStudyCase = async () => {
       setLoading(true);
       try {
-        const { data, error } = await supabase
-          .from('study_cases')
-          .select('*')
-          .eq('id', id)
-          .single();
+        const response = await getStudyCaseById(id as string);
+        console.log("Fetched study case response:", response);
 
-        if (error) throw error;
+        if (response && response.data) {
+          setTitle(response.data.title || "");
+          setDescription(response.data.description || "");
+          setCategory(response.data.category || "inheritance");
+          setPassThreshold(response.data.pass_threshold !== undefined && response.data.pass_threshold !== null ? response.data.pass_threshold : 0.7);
+          // setStatus(response.data.is_active !== undefined ? String(response.data.is_active) : "true");
 
-        if (data) {
-          setTitle(data.title);
-          setDescription(data.description);
-          setStatus(data.is_active);
-          setCategory(data.category || "inheritance");
-          setPassThreshold(data.pass_threshold !== undefined && data.pass_threshold !== null ? data.pass_threshold : 0.7);
-
-          // Load starter code
-          if (data.initial_code) {
+          if (response.data.initial_code) {
             try {
-              const parsedCode = typeof data.initial_code === "string" 
-                ? JSON.parse(data.initial_code)
-                : data.initial_code;
-              
+              const parsedCode = typeof response.data.initial_code === "string"
+                ? JSON.parse(response.data.initial_code)
+                : response.data.initial_code;
+
               if (Array.isArray(parsedCode)) {
                 setNodes(parsedCode);
-                if (parsedCode.length > 0) {
+
+                // Recursively find the first actual file node to load in the JavaEditor
+                const findFirstFile = (list: FileNode[]): FileNode | null => {
+                  for (const node of list) {
+                    if (node.type === "file") return node;
+                    if (node.children) {
+                      const found = findFirstFile(node.children);
+                      if (found) return found;
+                    }
+                  }
+                  return null;
+                };
+
+                const firstFile = findFirstFile(parsedCode);
+                if (firstFile) {
+                  setSelectedId(firstFile.id);
+                } else if (parsedCode.length > 0) {
                   setSelectedId(parsedCode[0].id);
                 }
+              }
+
+              if (typeof response.data.initial_code === "string") {
+                setInitialCode(response.data.initial_code);
+              } else {
+                setInitialCode(JSON.stringify(response.data.initial_code));
               }
             } catch (err) {
               console.error("Failed to parse initial_code", err);
@@ -78,8 +95,8 @@ export default function EditStudyCasePage() {
           setTimeout(() => {
             if (diagramRef.current) {
               diagramRef.current.setDiagram(
-                data.answer_key?.nodes || [],
-                data.answer_key?.edges || []
+                response.data.diagram_rules?.nodes || [],
+                response.data.diagram_rules?.edges || []
               );
             }
           }, 500);
@@ -96,47 +113,7 @@ export default function EditStudyCasePage() {
   }, [id, router]);
 
   // WebSocket Connection
-  useEffect(() => {
-    let socket: WebSocket;
-    let reconnectTimeout: NodeJS.Timeout;
 
-    const connect = () => {
-      console.log("🔌 Connecting to WebSocket from Lecturer Studio (Edit)...");
-      socket = new WebSocket("ws://localhost:8080");
-
-      socket.onopen = () => {
-        console.log("✅ Lecturer (Edit) connected to WebSocket");
-        socketRef.current = socket;
-      };
-
-      socket.onmessage = (event) => {
-        const msg = JSON.parse(event.data);
-        if (msg.type === "output" || msg.type === "error") {
-          setOutput((prev) => prev + msg.data);
-        }
-        if (msg.type === "end") {
-          setRunning(false);
-        }
-      };
-
-      socket.onerror = (error) => {
-        console.error("❌ WebSocket Error (Edit):", error);
-      };
-
-      socket.onclose = () => {
-        console.log("🔌 WebSocket (Edit) disconnected. Reconnecting in 3s...");
-        socketRef.current = null;
-        reconnectTimeout = setTimeout(connect, 3000);
-      };
-    };
-
-    connect();
-
-    return () => {
-      if (socket) socket.close();
-      clearTimeout(reconnectTimeout);
-    };
-  }, []);
 
   // Workspace File Handlers
   const findNode = useCallback((list: FileNode[], id: string): FileNode | null => {
@@ -254,9 +231,9 @@ export default function EditStudyCasePage() {
           const oldIdParts = node.id.split("/");
           oldIdParts[oldIdParts.length - 1] = newName;
           const newId = oldIdParts.join("/");
-          
+
           let updatedNode = { ...node, id: newId, name: newName };
-          
+
           if (node.type === "folder" && node.children) {
             const updateChildIds = (childrenList: FileNode[], parentPath: string): FileNode[] => {
               return childrenList.map((child) => {
@@ -273,10 +250,10 @@ export default function EditStudyCasePage() {
             };
             updatedNode.children = updateChildIds(node.children, newId);
           }
-          
+
           return updatedNode;
         }
-        
+
         if (node.children) {
           return { ...node, children: updateNodes(node.children) };
         }
@@ -286,7 +263,7 @@ export default function EditStudyCasePage() {
 
     setNodes((prevNodes) => {
       const nextNodes = updateNodes(prevNodes);
-      
+
       const nodeExists = (list: FileNode[], id: string): boolean => {
         for (const n of list) {
           if (n.id === id) return true;
@@ -294,7 +271,7 @@ export default function EditStudyCasePage() {
         }
         return false;
       };
-      
+
       if (selectedId && !nodeExists(nextNodes, selectedId)) {
         const findFirstFile = (tree: FileNode[]): FileNode | null => {
           for (const n of tree) {
@@ -309,7 +286,7 @@ export default function EditStudyCasePage() {
         const f = findFirstFile(nextNodes);
         if (f) setSelectedId(f.id);
       }
-      
+
       return nextNodes;
     });
   };
@@ -340,47 +317,10 @@ export default function EditStudyCasePage() {
     return result;
   };
 
-  const runCode = () => {
-    if (!socketRef.current || socketRef.current.readyState !== WebSocket.OPEN) {
-      alert("Execution server is offline or connecting. Please wait a moment.");
-      return;
-    }
-
-    setOutput("Output:\n");
-    setRunning(true);
-
-    const filesToSend = flattenFiles(nodes);
-
-    const currentDirPath = selectedId.includes("/") 
-      ? selectedId.split("/").slice(0, -1).join("/") 
-      : "";
-
-    let mainFile = filesToSend.find(f => f.path === (currentDirPath ? `${currentDirPath}/Main.java` : "Main.java"));
-    
-    if (!mainFile) {
-      mainFile = filesToSend.find(f => f.path.endsWith("Main.java"));
-    }
-    
-    let mainClass = "Main";
-    if (mainFile) {
-      mainClass = mainFile.path
-        .replace(/\.java$/, "")
-        .replace(/\//g, ".");
-    } else if (filesToSend.length > 0) {
-      mainClass = filesToSend[0].path
-        .replace(/\.java$/, "")
-        .replace(/\//g, ".");
-    }
-
-    socketRef.current.send(
-      JSON.stringify({
-        type: "run",
-        mainClass,
-        files: filesToSend,
-      })
-    );
+  const handleRun = () => {
+    // flattenFiles, nodes, dan selectedId biasanya ada di scope komponen/state
+    runJavaCode(nodes, selectedId, flattenFiles);
   };
-
   const handleUpdate = async () => {
     setUpdating(true);
     try {
@@ -393,28 +333,30 @@ export default function EditStudyCasePage() {
 
       const initialCodeValue = JSON.stringify(nodes);
 
-      const { error } = await supabase
-        .from('study_cases')
-        .update({
-          title,
-          description,
-          category,
-          answer_key: snapshot,
-          is_active: status,
-          pass_threshold: passThreshold,
-          initial_code: initialCodeValue,
-        })
-        .eq('id', id);
+      // Convert UML diagram elements to Logic Rules (Facts & relationships of classes, methods, and attributes)
+      const logicRulesResult = diagramRef.current?.getLogicRules();
+      const logicRulesValue = logicRulesResult ? logicRulesResult.rules : [];
 
-      if (error) {
-        alert("Error: " + error.message);
-      } else {
-        alert("Success! Study Case updated.");
+      const response = await updateStudyCase(id as string, {
+        title,
+        description,
+        category,
+        initial_code: initialCodeValue,
+        // is_active: status === "true",
+        // pass_threshold: passThreshold,
+        nodes: snapshot.nodes,
+        edges: snapshot.edges,
+        logic_rules: logicRulesValue
+      });
+      if (response.status === "ok" || response.success) {
+        alert("Success! Study Case and Answer Key are updated.");
         router.push("/lecturer");
+      } else {
+        alert("Updating failed: " + (response.error || "Unknown server error."));
       }
-    } catch (err) {
-      console.error(err);
-      alert("An unexpected error occurred.");
+    } catch (err: any) {
+      console.error("Failed Update Study Case", err);
+      alert("Failed Update Study Case: " + err.message);
     } finally {
       setUpdating(false);
     }
@@ -618,51 +560,48 @@ export default function EditStudyCasePage() {
 
         {/* Workspace Content */}
         <div className="flex-1 relative overflow-hidden">
-          {activeTab === "diagram" ? (
-            <div className="w-full h-full relative">
-              <DiagramCanvas ref={diagramRef} />
-            </div>
-          ) : (
-            <div className="w-full h-full flex overflow-hidden">
-              <ProjectExplorer
-                nodes={nodes}
-                selectedId={selectedId}
-                onFileSelect={(node) => setSelectedId(node.id)}
-                onToggleFolder={handleToggleFolder}
-                onAddFile={handleAddFile}
-                onAddFolder={handleAddFolder}
-                onDelete={handleDelete}
-                onRename={handleRename}
-              />
+          <div className={`w-full h-full relative ${activeTab === "diagram" ? "" : "hidden"}`}>
+            <DiagramCanvas ref={diagramRef} />
+          </div>
 
-              <div className="flex flex-1 flex-col overflow-hidden bg-[#181818]">
-                {currentFile ? (
-                  <div className="flex flex-1 flex-col overflow-hidden">
-                    <JavaEditor
-                      code={currentFile.content || ""}
-                      fileName={currentFile.name}
-                      onCodeChange={handleCodeChange}
-                      onRun={runCode}
-                    />
-                    <OutputPanel
-                      output={output}
-                      onClear={() => setOutput("")}
-                    />
+          <div className={`w-full h-full flex overflow-hidden ${activeTab === "code" ? "" : "hidden"}`}>
+            <ProjectExplorer
+              nodes={nodes}
+              selectedId={selectedId}
+              onFileSelect={(node) => setSelectedId(node.id)}
+              onToggleFolder={handleToggleFolder}
+              onAddFile={handleAddFile}
+              onAddFolder={handleAddFolder}
+              onDelete={handleDelete}
+              onRename={handleRename}
+            />
+
+            <div className="flex flex-1 flex-col overflow-hidden bg-[#181818]">
+              {currentFile ? (
+                <div className="flex flex-1 flex-col overflow-hidden">
+                  <JavaEditor
+                    code={currentFile.content || ""}
+                    fileName={currentFile.name}
+                    onCodeChange={handleCodeChange}
+                    onRun={handleRun}
+                  />
+                  <OutputPanel
+                    output={output}
+                  />
+                </div>
+              ) : (
+                <div className="flex-1 flex flex-col items-center justify-center text-slate-500 gap-3 bg-[#141414]">
+                  <div className="p-4 bg-white/5 rounded-full border border-white/10">
+                    <Sparkles className="w-8 h-8 text-slate-400" />
                   </div>
-                ) : (
-                  <div className="flex-1 flex flex-col items-center justify-center text-slate-500 gap-3 bg-[#141414]">
-                    <div className="p-4 bg-white/5 rounded-full border border-white/10">
-                      <Sparkles className="w-8 h-8 text-slate-400" />
-                    </div>
-                    <h3 className="text-sm font-bold text-slate-300">Starter Code Sandbox</h3>
-                    <p className="text-xs max-w-sm text-center leading-relaxed text-slate-500 animate-pulse">
-                      Create folders/packages and classes using the Explorer on the left, then click on files to configure their default starting buggy code structure.
-                    </p>
-                  </div>
-                )}
-              </div>
+                  <h3 className="text-sm font-bold text-slate-300">Starter Code Sandbox</h3>
+                  <p className="text-xs max-w-sm text-center leading-relaxed text-slate-500 animate-pulse">
+                    Create folders/packages and classes using the Explorer on the left, then click on files to configure their default starting buggy code structure.
+                  </p>
+                </div>
+              )}
             </div>
-          )}
+          </div>
         </div>
       </div>
     </div>

@@ -1,12 +1,14 @@
 "use client";
 
 import DiagramCanvas, { DiagramCanvasRef } from "@/components/diagram/DiagramCanvas";
-import { supabase } from "@/lib/supabase";
+import { createStudyCase } from "@/lib/api"
+
 import { useRef, useState, useEffect, useCallback } from "react";
 import { Rocket, Info, ChevronRight, ChevronDown, Save, Code, Sparkles, Terminal } from "lucide-react";
 import ProjectExplorer, { FileNode } from "@/components/ProjectExplorer";
 import JavaEditor from "@/components/JavaEditor";
 import OutputPanel from "@/components/OutputPanel";
+import { useSocket } from "@/hooks/useWebsocket";
 
 export default function NewStudyCasePage() {
   const [title, setTitle] = useState("");
@@ -27,52 +29,12 @@ export default function NewStudyCasePage() {
     },
   ]);
   const [selectedId, setSelectedId] = useState<string>("Main.java");
-  const [output, setOutput] = useState<string>("Execution output will be shown here...");
-  const [running, setRunning] = useState<boolean>(false);
-  const socketRef = useRef<WebSocket | null>(null);
+  const { output, isRunning, runJavaCode } = useSocket();  // Multi-file Workspace States
 
-  // WebSocket Connection
-  useEffect(() => {
-    let socket: WebSocket;
-    let reconnectTimeout: NodeJS.Timeout;
-
-    const connect = () => {
-      console.log("🔌 Connecting to WebSocket from Lecturer Studio...");
-      socket = new WebSocket("ws://localhost:8080");
-
-      socket.onopen = () => {
-        console.log("✅ Lecturer connected to WebSocket");
-        socketRef.current = socket;
-      };
-
-      socket.onmessage = (event) => {
-        const msg = JSON.parse(event.data);
-        if (msg.type === "output" || msg.type === "error") {
-          setOutput((prev) => prev + msg.data);
-        }
-        if (msg.type === "end") {
-          setRunning(false);
-        }
-      };
-
-      socket.onerror = (error) => {
-        console.error("❌ WebSocket Error:", error);
-      };
-
-      socket.onclose = () => {
-        console.log("🔌 WebSocket disconnected. Reconnecting in 3s...");
-        socketRef.current = null;
-        reconnectTimeout = setTimeout(connect, 3000);
-      };
-    };
-
-    connect();
-
-    return () => {
-      if (socket) socket.close();
-      clearTimeout(reconnectTimeout);
-    };
-  }, []);
+  const handleRun = () => {
+    // flattenFiles, nodes, dan selectedId biasanya ada di scope komponen/state
+    runJavaCode(nodes, selectedId, flattenFiles);
+  };
 
   // Workspace File Handlers
   const findNode = useCallback((list: FileNode[], id: string): FileNode | null => {
@@ -276,50 +238,11 @@ export default function NewStudyCasePage() {
     return result;
   };
 
-  const runCode = () => {
-    if (!socketRef.current || socketRef.current.readyState !== WebSocket.OPEN) {
-      alert("Execution server is offline or connecting. Please wait a moment.");
-      return;
-    }
-
-    setOutput("Output:\n");
-    setRunning(true);
-
-    const filesToSend = flattenFiles(nodes);
-
-    const currentDirPath = selectedId.includes("/")
-      ? selectedId.split("/").slice(0, -1).join("/")
-      : "";
-
-    let mainFile = filesToSend.find(f => f.path === (currentDirPath ? `${currentDirPath}/Main.java` : "Main.java"));
-
-    if (!mainFile) {
-      mainFile = filesToSend.find(f => f.path.endsWith("Main.java"));
-    }
-
-    let mainClass = "Main";
-    if (mainFile) {
-      mainClass = mainFile.path
-        .replace(/\.java$/, "")
-        .replace(/\//g, ".");
-    } else if (filesToSend.length > 0) {
-      mainClass = filesToSend[0].path
-        .replace(/\.java$/, "")
-        .replace(/\//g, ".");
-    }
-
-    socketRef.current.send(
-      JSON.stringify({
-        type: "run",
-        mainClass,
-        files: filesToSend,
-      })
-    );
-  };
 
   const handlePublish = async () => {
     setLoading(true);
     try {
+
       const snapshot = diagramRef.current?.getSnapshot();
 
       if (!snapshot || snapshot.nodes.length === 0) {
@@ -329,21 +252,20 @@ export default function NewStudyCasePage() {
 
       const initialCodeValue = JSON.stringify(nodes);
 
-      const { error } = await supabase
-        .from('study_cases')
-        .insert([{
-          title,
-          description,
-          category,
-          answer_key: snapshot,
-          pass_threshold: passThreshold,
-          initial_code: initialCodeValue,
-          is_active: true,
-        }]);
+      // Convert UML diagram elements to Logic Rules (Facts & relationships of classes, methods, and attributes)
+      const logicRulesResult = diagramRef.current?.getLogicRules();
+      const logicRulesValue = logicRulesResult ? logicRulesResult.rules : [];
 
-      if (error) {
-        alert("Error: " + error.message);
-      } else {
+      const response = await createStudyCase({
+        title,
+        description,
+        category,
+        initial_code: initialCodeValue,
+        nodes: snapshot.nodes,
+        edges: snapshot.edges,
+        logic_rules: logicRulesValue
+      });
+      if (response.status === "ok" || response.success) {
         alert("Success! Study Case and Answer Key are stored.");
         setTitle("");
         setDescription("");
@@ -357,10 +279,12 @@ export default function NewStudyCasePage() {
           },
         ]);
         setSelectedId("Main.java");
+      } else {
+        alert("Publishing failed: " + (response.error || "Unknown server error."));
       }
-    } catch (err) {
-      console.error(err);
-      alert("An unexpected error occurred.");
+    } catch (err: any) {
+      console.error("Failed Publish Study Case", err);
+      alert("Failed Publish Study Case: " + err.message);
     } finally {
       setLoading(false);
     }
@@ -535,51 +459,48 @@ export default function NewStudyCasePage() {
 
         {/* Workspace Content */}
         <div className="flex-1 relative overflow-hidden">
-          {activeTab === "diagram" ? (
-            <div className="w-full h-full relative">
-              <DiagramCanvas ref={diagramRef} />
-            </div>
-          ) : (
-            <div className="w-full h-full flex overflow-hidden">
-              <ProjectExplorer
-                nodes={nodes}
-                selectedId={selectedId}
-                onFileSelect={(node) => setSelectedId(node.id)}
-                onToggleFolder={handleToggleFolder}
-                onAddFile={handleAddFile}
-                onAddFolder={handleAddFolder}
-                onDelete={handleDelete}
-                onRename={handleRename}
-              />
+          <div className={`w-full h-full relative ${activeTab === "diagram" ? "" : "hidden"}`}>
+            <DiagramCanvas ref={diagramRef} />
+          </div>
 
-              <div className="flex flex-1 flex-col overflow-hidden bg-[#181818]">
-                {currentFile ? (
-                  <div className="flex flex-1 flex-col overflow-hidden">
-                    <JavaEditor
-                      code={currentFile.content || ""}
-                      fileName={currentFile.name}
-                      onCodeChange={handleCodeChange}
-                      onRun={runCode}
-                    />
-                    <OutputPanel
-                      output={output}
-                      onClear={() => setOutput("")}
-                    />
+          <div className={`w-full h-full flex overflow-hidden ${activeTab === "code" ? "" : "hidden"}`}>
+            <ProjectExplorer
+              nodes={nodes}
+              selectedId={selectedId}
+              onFileSelect={(node) => setSelectedId(node.id)}
+              onToggleFolder={handleToggleFolder}
+              onAddFile={handleAddFile}
+              onAddFolder={handleAddFolder}
+              onDelete={handleDelete}
+              onRename={handleRename}
+            />
+
+            <div className="flex flex-1 flex-col overflow-hidden bg-[#181818]">
+              {currentFile ? (
+                <div className="flex flex-1 flex-col overflow-hidden">
+                  <JavaEditor
+                    code={currentFile.content || ""}
+                    fileName={currentFile.name}
+                    onCodeChange={handleCodeChange}
+                    onRun={handleRun}
+                  />
+                  <OutputPanel
+                    output={output}
+                  />
+                </div>
+              ) : (
+                <div className="flex-1 flex flex-col items-center justify-center text-slate-500 gap-3 bg-[#141414]">
+                  <div className="p-4 bg-white/5 rounded-full border border-white/10">
+                    <Sparkles className="w-8 h-8 text-slate-400" />
                   </div>
-                ) : (
-                  <div className="flex-1 flex flex-col items-center justify-center text-slate-500 gap-3 bg-[#141414]">
-                    <div className="p-4 bg-white/5 rounded-full border border-white/10">
-                      <Sparkles className="w-8 h-8 text-slate-400" />
-                    </div>
-                    <h3 className="text-sm font-bold text-slate-300">Starter Code Sandbox</h3>
-                    <p className="text-xs max-w-sm text-center leading-relaxed text-slate-500 animate-pulse">
-                      Create folders/packages and classes using the Explorer on the left, then click on files to configure their default starting buggy code structure.
-                    </p>
-                  </div>
-                )}
-              </div>
+                  <h3 className="text-sm font-bold text-slate-300">Starter Code Sandbox</h3>
+                  <p className="text-xs max-w-sm text-center leading-relaxed text-slate-500 animate-pulse">
+                    Create folders/packages and classes using the Explorer on the left, then click on files to configure their default starting buggy code structure.
+                  </p>
+                </div>
+              )}
             </div>
-          )}
+          </div>
         </div>
       </div>
     </div>
