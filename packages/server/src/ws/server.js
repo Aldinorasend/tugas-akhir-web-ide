@@ -18,7 +18,6 @@ export const initWebSocket = (httpServer) => {
         ws.on("message", async (message) => {
             const data = JSON.parse(message);
 
-            // 👉 START EXECUTION
             if (data.type === "run") {
                 const { files, mainClass } = data;
 
@@ -36,7 +35,7 @@ export const initWebSocket = (httpServer) => {
 
                 dockerProcess = spawn("docker", [
                     "run",
-                    "-i", // 🔥 interactive + terminal
+                    "-i",
                     "--rm",
                     "--memory=256m",
                     "--cpus=0.5",
@@ -76,7 +75,6 @@ export const initWebSocket = (httpServer) => {
                 });
             }
 
-            // 👉 SEND INPUT
             if (data.type === "input") {
                 if (dockerProcess) {
                     dockerProcess.stdin.write(data.data + "\n");
