@@ -4,12 +4,14 @@ import {
     getStudyCaseById,
     createStudyCase,
     updateStudyCase,
-    deleteStudyCase
+    deleteStudyCase,
+    randomStudyCase
 } from "../controllers/studyCaseController.js";
 
 const router = express.Router();
 
 router.get("/", getAllStudyCases);
+router.get("/random", randomStudyCase);
 router.get("/:id", getStudyCaseById);
 router.post("/", createStudyCase);
 router.put("/:id", updateStudyCase);

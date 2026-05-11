@@ -45,24 +45,16 @@ export const createStudyCase = async (studyCase: any) => {
 }
 
 export const getRandomStudyCase = async () => {
-    const { count, error: countError } = await supabase
-        .from('study_cases')
-        .select('*', { count: 'exact', head: true })
-
-    if (countError) throw countError;
-    if (count === 0 || count === null) return null;
-
-    const randomIndex = Math.floor(Math.random() * count);
-
-    const { data, error: fetchError } = await supabase
-        .from('study_cases')
-        .select('*')
-        .eq('is_active', true)
-        .range(randomIndex, randomIndex)
-        .single();
-
-    if (fetchError) throw fetchError;
-    return data;
+    const response = await fetch(`${API_URL}/study-cases/random`, {
+        method: 'GET',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+    });
+    if (!response.ok) {
+        throw new Error('Gagal mengambil data dari server');
+    }
+    return response.json();
 };
 
 export const updateStudyCase = async (id: string, studyCase: any) => {

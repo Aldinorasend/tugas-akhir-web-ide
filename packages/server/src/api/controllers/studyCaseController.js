@@ -175,4 +175,51 @@ export const deleteStudyCase = async (req, res) => {
     }
 }
 
+export const randomStudyCase = async (req, res) => {
+    try {
+        // 1. Get count of active exercises
+        const { count, error: countError } = await supabase
+            .from('exercises')
+            .select('*', { count: 'exact', head: true })
+        // .eq('is_active', true);
+
+        if (countError) throw countError;
+        if (!count) {
+            return res.json({
+                status: "ok",
+                data: null
+            });
+        }
+
+        // 2. Choose a random index
+        const randomIndex = Math.floor(Math.random() * count);
+
+        // 3. Fetch single active exercise at that index
+        const { data, error } = await supabase
+            .from('exercises')
+            .select('*, diagram_rules(*)')
+            // .eq('is_active', true)
+            .range(randomIndex, randomIndex)
+            .single();
+
+        if (error) throw error;
+
+        const diagram_rules = data.diagram_rules && data.diagram_rules.length > 0
+            ? data.diagram_rules[0]
+            : null;
+
+        const formattedData = {
+            ...data,
+            diagram_rules,
+            answer_key: diagram_rules
+        };
+
+        res.json({
+            status: "ok",
+            data: formattedData
+        });
+    } catch (error) {
+        return res.status(500).json({ error: error.message });
+    }
+}
 

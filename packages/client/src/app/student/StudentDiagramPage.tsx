@@ -7,6 +7,7 @@ import { useEffect, useRef, useState } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import { gradeDiagram } from "@/lib/grader";
 import { supabase } from "@/lib/supabase";
+import { Shuffle } from "lucide-react";
 
 export default function StudentDiagramPage() {
     const [gradeResult, setGradeResult] = useState<{ score: number, feedbacks: string[], isPassed: boolean } | null>(null);
@@ -22,19 +23,29 @@ export default function StudentDiagramPage() {
 
     // Loading the Study Case
     const loadCase = async () => {
-        setLoading(true)
+        setLoading(true);
         try {
             const id = searchParams.get("id");
 
             if (id) {
-                const data = await getStudyCaseById(id);
-                setStudyCase(data);
+                const response = await getStudyCaseById(id);
+                const actualData = response?.data || response;
+                if (actualData) {
+                    if (!actualData.answer_key) {
+                        actualData.answer_key = actualData.diagram_rules;
+                    }
+                    setStudyCase(actualData);
+                }
             } else {
-                const data = await getRandomStudyCase();
-                if (data) {
-                    setStudyCase(data);
+                const response = await getRandomStudyCase();
+                const actualData = response?.data || response;
+                if (actualData) {
+                    if (!actualData.answer_key) {
+                        actualData.answer_key = actualData.diagram_rules;
+                    }
+                    setStudyCase(actualData);
                     const params = new URLSearchParams(window.location.search);
-                    params.set("id", data.id);
+                    params.set("id", actualData.id);
                     window.history.pushState(null, "", `?${params.toString()}`);
                 }
             }
@@ -43,7 +54,38 @@ export default function StudentDiagramPage() {
         } finally {
             setLoading(false);
         }
-    }
+    };
+
+    const handleRandomize = async () => {
+        setLoading(true);
+        try {
+            const response = await getRandomStudyCase();
+            const actualData = response?.data || response;
+            if (actualData) {
+                if (!actualData.answer_key) {
+                    actualData.answer_key = actualData.diagram_rules;
+                }
+                setStudyCase(actualData);
+
+                // Reset canvas & scoring states
+                setGradeResult(null);
+                setStage(3);
+                if (diagramRef.current) {
+                    diagramRef.current.setDiagram([], []);
+                }
+
+                const params = new URLSearchParams(window.location.search);
+                params.set("id", actualData.id);
+                window.history.pushState(null, "", `?${params.toString()}`);
+            }
+        } catch (err) {
+            console.error("Failed to randomize case", err);
+            alert("Gagal mengambil study case acak.");
+        } finally {
+            setLoading(false);
+        }
+    };
+
     useEffect(() => {
         loadCase();
     }, [searchParams]);
@@ -105,8 +147,16 @@ export default function StudentDiagramPage() {
 
         <main className="flex h-screen w-screen overflow-hidden bg-[#020617] text-slate-300">
             <div className="w-86 h-full overflow-y-auto border-r border-slate-800 bg-[#0f172a] p-6 flex flex-col shadow-2xl">
-                <div className=" border-dashed p-3 border border-blue-600 rounded-lg mb-6 items-center">
-                    <h1 className="text-center font-bold text-white text-xl">Study Case </h1>
+                <div className="border-dashed p-3 border border-blue-600 rounded-lg mb-6 flex justify-between items-center bg-blue-950/20">
+                    <h1 className="font-bold text-white text-lg">Study Case</h1>
+                    <button 
+                        onClick={handleRandomize}
+                        title="Load Random Case"
+                        className="p-1.5 px-3 bg-slate-800 hover:bg-slate-700 active:scale-95 text-blue-400 hover:text-blue-300 rounded-lg transition-all border border-slate-700/50 flex items-center justify-center gap-1.5"
+                    >
+                        <Shuffle className="w-3.5 h-3.5" />
+                        <span className="text-xs font-bold">Random</span>
+                    </button>
                 </div>
                 <div className="flex flex-col mb-6">
                     <h3 className="text-md font-semibold text-blue-600 "> Title:</h3>
