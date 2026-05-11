@@ -1,0 +1,14 @@
+{
+  "name": "pathwise-monorepo",
+  "version": "1.0.0",
+  "scripts": {
+    "dev": "concurrently \"npm run dev --workspace=packages/client\" \"npm run dev --workspace=packages/server\"",
+    "install:all": "npm install && npm install --workspace=packages/client && npm install --workspace=packages/server"
+  },
+  "workspaces": [
+    "packages/*"
+  ],
+  "devDependencies": {
+    "concurrently": "^8.0.0"
+  }
+}

@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { supabase } from "@/lib/supabase";
+import { getAllStudyCases, deleteStudyCase } from "@/lib/api"
 import { StudyCase } from "@/app/types/uml";
 import { BookOpen, Search, Filter, Calendar, Eye, Trash2, Layout, FileText, ChevronRight, Edit3 } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -9,22 +10,23 @@ import { useRouter } from "next/navigation";
 import DiagramPreview from "@/components/diagram/DiagramPreview";
 
 export default function StudyCaseListPage() {
-  const [cases, setCases] = useState<StudyCase[]>([]);
+  const [cases, setCases] = useState<any[]>([]);
   const [selectedCase, setSelectedCase] = useState<StudyCase | null>(null);
   const [loading, setLoading] = useState(true);
   const router = useRouter();
 
   useEffect(() => {
     const fetchCases = async () => {
-      setLoading(true);
-      const { data, error } = await supabase
-        .from('study_cases')
-        .select('*')
-        .order('created_at', { ascending: false });
+      try {
+        setLoading(true);
+        const result = await getAllStudyCases();
+        setCases(result.data || []);
+      } catch (error) {
+        console.error("Error Fetching Study Cases:", error)
+      } finally {
+        setLoading(false);
 
-      if (error) console.error(error);
-      else setCases((data as StudyCase[]) || []);
-      setLoading(false);
+      }
     };
 
     fetchCases();
@@ -34,15 +36,17 @@ export default function StudyCaseListPage() {
     e.stopPropagation();
     if (!confirm("Are you sure you want to delete this study case?")) return;
 
-    const { error } = await supabase
-      .from('study_cases')
-      .delete()
-      .eq('id', id);
-
-    if (error) alert("Error deleting: " + error.message);
-    else {
-      setCases(cases.filter(c => c.id !== id));
-      if (selectedCase?.id === id) setSelectedCase(null);
+    try {
+      const response = await deleteStudyCase(id);
+      if (response.status === "ok") {
+        setCases(cases.filter(c => c.id !== id));
+        if (selectedCase?.id === id) setSelectedCase(null);
+      } else {
+        alert("Error deleting: " + (response.error || "Unknown server error"));
+      }
+    } catch (err: any) {
+      console.error("Error deleting study case:", err);
+      alert("Error deleting: " + err.message);
     }
   };
 
@@ -188,8 +192,8 @@ export default function StudyCaseListPage() {
 
             <div className="flex-1 relative">
               <DiagramPreview
-                nodes={selectedCase.answer_key?.nodes || []}
-                edges={selectedCase.answer_key?.edges || []}
+                nodes={selectedCase.diagram_rules.nodes || []}
+                edges={selectedCase.diagram_rules?.edges || []}
               />
 
               {/* Overlay Gradient to blend with header */}
