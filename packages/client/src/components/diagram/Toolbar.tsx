@@ -15,6 +15,7 @@ export default function Toolbar({
   onSubmit
 }: ToolbarProps) {
   const relations: { type: RelationType; icon: any; color: string; label: string }[] = [
+    { type: "association", icon: LinkIcon, color: "text-blue-500", label: "Association" },
     { type: "inheritance", icon: Share2, color: "text-orange-500", label: "Inheritance" },
     { type: "interface", icon: GitMerge, color: "text-violet-500", label: "Interface" },
   ];

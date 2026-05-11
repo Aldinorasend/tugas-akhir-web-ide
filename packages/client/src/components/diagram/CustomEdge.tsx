@@ -34,7 +34,7 @@ export default function CustomEdge({
   const edgeStyle = {
     ...style,
     strokeWidth: 2,
-    stroke: type === 'inheritance' ? '#f97316' : '#8b5cf6',
+    stroke: type === 'inheritance' ? '#f97316' : type === 'interface' ? '#8b5cf6' : '#3b82f6',
     strokeDasharray: type === 'interface' ? '5,5' : undefined,
   };
 
@@ -56,7 +56,7 @@ export default function CustomEdge({
               fontSize: '10px',
               fontWeight: 'bold',
               border: '1px solid #334155',
-              color: type === 'inheritance' ? '#f97316' : '#a78bfa',
+              color: type === 'inheritance' ? '#f97316' : type === 'interface' ? '#a78bfa' : '#3b82f6',
               pointerEvents: 'all',
               boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)',
             }}
@@ -98,6 +98,19 @@ export const MarkerDefinitions = () => (
         orient="auto-start-reverse"
       >
         <path d="M 0 0 L 10 5 L 0 10 z" fill="#1e293b" stroke="#8b5cf6" strokeWidth="1" />
+      </marker>
+
+      {/* Association: Open Arrow (Relasi Biasa) */}
+      <marker
+        id="marker-association"
+        viewBox="0 0 10 10"
+        refX="10"
+        refY="5"
+        markerWidth="7"
+        markerHeight="7"
+        orient="auto-start-reverse"
+      >
+        <path d="M 0 1.5 L 9 5 L 0 8.5" fill="none" stroke="#3b82f6" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
       </marker>
     </defs>
   </svg>

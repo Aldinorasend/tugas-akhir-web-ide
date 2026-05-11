@@ -1,6 +1,6 @@
 import { Handle, Position, NodeProps, useReactFlow } from "reactflow";
-import { UMLClassData, AccessModifier } from "@/app/types/uml";
-import { Plus, Trash2, X } from "lucide-react";
+import { UMLClassData, AccessModifier, Attribute, Method } from "@/app/types/uml";
+import { Plus, Trash2 } from "lucide-react";
 import { generateId } from "@/app/utils/id";
 
 export default function ClassNode({
@@ -47,7 +47,7 @@ export default function ClassNode({
     updateNodeData({ attributes: [...attributes, newAttr] });
   };
 
-  const updateAttribute = (attrId: string, updates: any) => {
+  const updateAttribute = (attrId: string, updates: Partial<Attribute>) => {
     const newAttributes = attributes.map((attr) =>
       attr.id === attrId ? { ...attr, ...updates } : attr
     );
@@ -71,7 +71,7 @@ export default function ClassNode({
     updateNodeData({ methods: [...methods, newMethod] });
   };
 
-  const updateMethod = (methodId: string, updates: any) => {
+  const updateMethod = (methodId: string, updates: Partial<Method>) => {
     const newMethods = methods.map((m) =>
       m.id === methodId ? { ...m, ...updates } : m
     );
@@ -109,13 +109,13 @@ export default function ClassNode({
           <div className="flex gap-2">
             {!readOnly && (
               <>
-                <button 
+                <button
                   onClick={(e) => { e.stopPropagation(); toggleAbstract(); }}
                   className={`text-[9px] px-1.5 py-0.5 rounded border transition-colors ${isAbstract ? 'bg-amber-500/20 border-amber-500/50 text-amber-400' : 'bg-slate-800 border-slate-700 text-slate-500 hover:border-slate-600'}`}
                 >
                   ABSTRACT
                 </button>
-                <button 
+                <button
                   onClick={(e) => { e.stopPropagation(); toggleInterface(); }}
                   className={`text-[9px] px-1.5 py-0.5 rounded border transition-colors ${isInterface ? 'bg-purple-500/20 border-purple-500/50 text-purple-400' : 'bg-slate-800 border-slate-700 text-slate-500 hover:border-slate-600'}`}
                 >
@@ -125,7 +125,7 @@ export default function ClassNode({
             )}
           </div>
           {!readOnly && (
-            <button 
+            <button
               onClick={handleDelete}
               className="nodrag nopan text-slate-500 hover:text-red-400 opacity-0 group-hover:opacity-100 transition-opacity p-1 hover:bg-red-500/10 rounded"
             >
@@ -133,7 +133,7 @@ export default function ClassNode({
             </button>
           )}
         </div>
-        
+
         <div className="flex flex-col items-center">
           {isInterface && <span className="text-[10px] text-purple-400 font-bold mb-1">«interface»</span>}
           {isAbstract && <span className="text-[10px] text-amber-400 font-bold mb-1">«abstract»</span>}
@@ -177,7 +177,7 @@ export default function ClassNode({
               <>
                 <select
                   value={attr.access}
-                  onChange={(e) => updateAttribute(attr.id, { access: e.target.value })}
+                  onChange={(e) => updateAttribute(attr.id, { access: e.target.value as AccessModifier })}
                   className="nodrag nopan bg-slate-900 text-blue-400 text-[11px] font-bold rounded-md outline-none px-1 py-1 border border-slate-700 focus:border-blue-500/50"
                 >
                   <option value="+">+</option>
@@ -204,8 +204,8 @@ export default function ClassNode({
                     <option value={attr.type}>{attr.type}</option>
                   )}
                 </select>
-                <button onClick={(e) => removeAttribute(e, attr.id)} className="nodrag nopan text-slate-600 hover:text-red-400 opacity-0 group-row-hover:opacity-100 p-0.5 transition-opacity">
-                  <X size={12} />
+                <button onClick={(e) => removeAttribute(e, attr.id)} className="nodrag nopan text-slate-500 hover:text-red-400 opacity-100 group-hover/row:opacity-100 p-1 hover:bg-red-500/10 rounded transition-all flex items-center justify-center">
+                  <Trash2 size={12} />
                 </button>
               </>
             )}
@@ -237,7 +237,7 @@ export default function ClassNode({
               <>
                 <select
                   value={method.access}
-                  onChange={(e) => updateMethod(method.id, { access: e.target.value })}
+                  onChange={(e) => updateMethod(method.id, { access: e.target.value as AccessModifier })}
                   className="nodrag nopan bg-slate-900 text-blue-400 text-[11px] font-bold rounded-md outline-none px-1 py-1 border border-slate-700 focus:border-blue-500/50"
                 >
                   <option value="+">+</option>
@@ -264,8 +264,8 @@ export default function ClassNode({
                     <option value={method.returnType}>{method.returnType}</option>
                   )}
                 </select>
-                <button onClick={(e) => removeMethod(e, method.id)} className="nodrag nopan text-slate-600 hover:text-red-400 opacity-0 group-row-hover:opacity-100 p-0.5 transition-opacity">
-                  <X size={12} />
+                <button onClick={(e) => removeMethod(e, method.id)} className="nodrag nopan text-slate-500 hover:text-red-400 opacity-100 group-hover/row:opacity-100 p-1 hover:bg-red-500/10 rounded transition-all flex items-center justify-center">
+                  <Trash2 size={12} />
                 </button>
               </>
             )}
@@ -278,4 +278,4 @@ export default function ClassNode({
 
 
 
-
+

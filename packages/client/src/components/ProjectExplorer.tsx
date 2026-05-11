@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useRef, useEffect } from "react";
-import { ChevronRight, ChevronDown, FileCode, Folder, Plus, Trash2, FolderPlus } from "lucide-react";
+import { ChevronRight, ChevronDown, FileCode, Folder, Plus, Trash2, FolderPlus, Edit2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 export interface FileNode {
@@ -21,6 +21,7 @@ interface ProjectExplorerProps {
   onAddFile: (parentId: string, name: string) => void;
   onAddFolder: (parentId: string, name: string) => void;
   onDelete?: (nodeId: string) => void;
+  onRename?: (nodeId: string, newName: string) => void;
 }
 
 export default function ProjectExplorer({
@@ -31,9 +32,12 @@ export default function ProjectExplorer({
   onAddFile,
   onAddFolder,
   onDelete,
+  onRename,
 }: ProjectExplorerProps) {
   const [creating, setCreating] = useState<{ parentId: string; type: "file" | "folder" } | null>(null);
   const [newName, setNewName] = useState("");
+  const [renamingId, setRenamingId] = useState<string | null>(null);
+  const [renameName, setRenameName] = useState("");
   const inputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -59,68 +63,121 @@ export default function ProjectExplorer({
   const renderTree = (list: FileNode[], depth = 0) => {
     return list.map((node) => (
       <div key={node.id} className="flex flex-col">
-        <div
-          onClick={() => {
-            if (node.type === "folder") {
-              onToggleFolder(node.id);
-            } else {
-              onFileSelect(node);
-            }
-          }}
-          className={cn(
-            "group flex items-center gap-2 px-3 py-1.5 cursor-pointer text-sm transition-colors",
-            selectedId === node.id ? "bg-orange-500/10 text-orange-400" : "text-slate-400 hover:bg-white/5",
-          )}
-          style={{ paddingLeft: `${(depth + 1) * 12}px` }}
-        >
-          {node.type === "folder" ? (
-            <>
-              {node.isOpen ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
-              <Folder size={14} className="text-blue-400" />
-            </>
-          ) : (
-            <>
-              <span className="w-3.5" />
-              <FileCode size={14} className="text-orange-500" />
-            </>
-          )}
-          <span className="flex-1 truncate">{node.name}</span>
-
-          {node.type === "folder" && (
-            <div className="hidden group-hover:flex items-center gap-1">
-              <button
-                onClick={(e) => {
-                  e.stopPropagation();
-                  setCreating({ parentId: node.id, type: "file" });
-                }}
-                className="p-0.5 hover:bg-white/10 rounded"
-              >
-                <Plus size={12} />
-              </button>
-              <button
-                onClick={(e) => {
-                  e.stopPropagation();
-                  setCreating({ parentId: node.id, type: "folder" });
-                }}
-                className="p-0.5 hover:bg-white/10 rounded"
-              >
-                <FolderPlus size={12} />
-              </button>
-            </div>
-          )}
-
-          {onDelete && (
-            <button
-              onClick={(e) => {
-                e.stopPropagation();
-                onDelete(node.id);
+        {renamingId === node.id ? (
+          <form
+            onSubmit={(e) => {
+              e.preventDefault();
+              if (renameName.trim() && onRename) {
+                onRename(node.id, renameName.trim());
+              }
+              setRenamingId(null);
+              setRenameName("");
+            }}
+            className="flex items-center gap-2 px-3 py-1.5"
+            style={{ paddingLeft: `${(depth + 1) * 12}px` }}
+          >
+            {node.type === "folder" ? (
+              <Folder size={14} className="text-blue-400 shrink-0" />
+            ) : (
+              <FileCode size={14} className="text-orange-500 shrink-0" />
+            )}
+            <input
+              type="text"
+              value={renameName}
+              onChange={(e) => setRenameName(e.target.value)}
+              onBlur={() => {
+                if (renameName.trim() && onRename) {
+                  onRename(node.id, renameName.trim());
+                }
+                setRenamingId(null);
               }}
-              className="hidden group-hover:block p-0.5 hover:text-red-400 rounded"
-            >
-              <Trash2 size={12} />
-            </button>
-          )}
-        </div>
+              onKeyDown={(e) => {
+                if (e.key === "Escape") {
+                  setRenamingId(null);
+                }
+              }}
+              className="bg-slate-800 border border-slate-700 rounded px-1.5 py-0.5 text-xs text-slate-200 flex-1 outline-none focus:border-orange-500"
+              autoFocus
+            />
+          </form>
+        ) : (
+          <div
+            onClick={() => {
+              if (node.type === "folder") {
+                onToggleFolder(node.id);
+              } else {
+                onFileSelect(node);
+              }
+            }}
+            className={cn(
+              "group flex items-center gap-2 px-3 py-1.5 cursor-pointer text-sm transition-colors",
+              selectedId === node.id ? "bg-orange-500/10 text-orange-400" : "text-slate-400 hover:bg-white/5",
+            )}
+            style={{ paddingLeft: `${(depth + 1) * 12}px` }}
+          >
+            {node.type === "folder" ? (
+              <>
+                {node.isOpen ? <ChevronDown size={14} className="shrink-0" /> : <ChevronRight size={14} className="shrink-0" />}
+                <Folder size={14} className="text-blue-400 shrink-0" />
+              </>
+            ) : (
+              <>
+                <span className="w-3.5 shrink-0" />
+                <FileCode size={14} className="text-orange-500 shrink-0" />
+              </>
+            )}
+            <span className="flex-1 truncate">{node.name}</span>
+
+            {node.type === "folder" && (
+              <div className="hidden group-hover:flex items-center gap-1">
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setCreating({ parentId: node.id, type: "file" });
+                  }}
+                  className="p-0.5 hover:bg-white/10 rounded"
+                >
+                  <Plus size={12} />
+                </button>
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setCreating({ parentId: node.id, type: "folder" });
+                  }}
+                  className="p-0.5 hover:bg-white/10 rounded"
+                >
+                  <FolderPlus size={12} />
+                </button>
+              </div>
+            )}
+
+            {onRename && (
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setRenamingId(node.id);
+                  setRenameName(node.name);
+                }}
+                className="hidden group-hover:block p-0.5 hover:text-orange-400 rounded mr-1"
+                title="Rename"
+              >
+                <Edit2 size={12} />
+              </button>
+            )}
+
+            {onDelete && (
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onDelete(node.id);
+                }}
+                className="hidden group-hover:block p-0.5 hover:text-red-400 rounded"
+              >
+                <Trash2 size={12} />
+              </button>
+            )}
+          </div>
+        )}
 
         {creating?.parentId === node.id && (
           <form

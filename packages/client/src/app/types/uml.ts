@@ -33,7 +33,8 @@ export type UMLNode = Node<UMLClassData>;
 
 export type RelationType =
   | "inheritance"
-  | "interface";
+  | "interface"
+  | "association";
 
 export interface UMLRelationData {
   type: RelationType;
@@ -52,6 +53,11 @@ export interface StudyCase {
   id: string;
   title: string;
   description: string;
-  answerKey: ClassDiagram;
-  createdAt: string;
+  category?: string;
+  is_active?: boolean | string;
+  answer_key: {
+    nodes: UMLNode[];
+    edges: UMLEdge[];
+  };
+  created_at: string;
 }
