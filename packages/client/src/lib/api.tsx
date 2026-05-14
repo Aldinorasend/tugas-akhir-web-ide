@@ -83,3 +83,17 @@ export const deleteStudyCase = async (id: string) => {
     }
     return response.json();
 };
+
+export const graderDiagram = async (exerciseId: string, nodes: any[], edges: any[]) => {
+    const response = await fetch(`${API_URL}/projects/grade-diagram`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ exerciseId, nodes, edges }),
+    });
+    if (!response.ok) {
+        throw new Error('Gagal menilai diagram');
+    }
+    return response.json();
+}

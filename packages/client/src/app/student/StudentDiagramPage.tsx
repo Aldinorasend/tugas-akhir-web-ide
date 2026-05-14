@@ -12,6 +12,7 @@ import ProjectExplorer, { FileNode } from "@/components/ProjectExplorer";
 import JavaEditor from "@/components/JavaEditor";
 import OutputPanel from "@/components/OutputPanel";
 import { useSocket } from "@/hooks/useWebsocket";
+import { graderDiagram } from "@/lib/api";
 import { useWorkspace } from "@/hooks/useWorkspace";
 
 export default function StudentDiagramPage() {
@@ -183,24 +184,23 @@ export default function StudentDiagramPage() {
         if (!studentData || !nim) return alert("Isi NIM dan lengkapi diagram!");
 
         setIsSubmitting(true);
-        const result = gradeDiagram(studyCase.answer_key, studentData);
-        setGradeResult(result); // Simpan hasil untuk overlay
-        if (result.isPassed) {
-            setIsIdeUnlocked(true);
-        }
-
-        // Simpan ke Supabase tetap berjalan di background
         try {
-            await supabase.from('submissions').insert([{
-                study_case_id: studyCase.id,
-                content: studentData,
-                score: result.score,
-                passed: result.isPassed,
-                student_id: nim,
-                nim: nim
-            }]);
-        } catch (err) {
-            console.error(err);
+            const result = await graderDiagram(studyCase.id, studentData.nodes, studentData.edges);
+
+            if (result.success) {
+                setGradeResult(result.grade); // Menampilkan nilai (misal: 80)
+
+                if (result.isPassed) {
+                    setIsIdeUnlocked(true); // Membuka akses ke editor Java
+                }
+            }
+
+            // Simpan ke Supabase (tanpa error handling agar UI tetap responsif)
+
+
+        } catch (error) {
+            console.error("Error grading:", error);
+            alert("Gagal mengirim jawaban. Coba lagi.");
         } finally {
             setIsSubmitting(false);
         }
@@ -320,8 +320,8 @@ export default function StudentDiagramPage() {
                         <button
                             onClick={() => setShowScaffolding(!showScaffolding)}
                             className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-[10px] font-bold uppercase tracking-widest transition-all ${showScaffolding
-                                    ? "bg-orange-500/20 text-orange-400 border border-orange-500/30"
-                                    : "bg-slate-800 text-slate-400 border border-slate-700 hover:bg-slate-700"
+                                ? "bg-orange-500/20 text-orange-400 border border-orange-500/30"
+                                : "bg-slate-800 text-slate-400 border border-slate-700 hover:bg-slate-700"
                                 }`}
                         >
                             <Sparkles className={`w-3 h-3 ${showScaffolding ? "animate-pulse" : ""}`} />
