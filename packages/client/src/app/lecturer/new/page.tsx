@@ -56,9 +56,6 @@ export default function NewStudyCasePage() {
 
       const initialCodeValue = JSON.stringify(nodes);
 
-      // Convert UML diagram elements to Logic Rules (Facts & relationships of classes, methods, and attributes)
-      const logicRulesResult = diagramRef.current?.getLogicRules();
-      const logicRulesValue = logicRulesResult ? logicRulesResult.rules : [];
 
       const response = await createStudyCase({
         title,
@@ -67,7 +64,6 @@ export default function NewStudyCasePage() {
         initial_code: initialCodeValue,
         nodes: snapshot.nodes,
         edges: snapshot.edges,
-        logic_rules: logicRulesValue
       });
       if (response.status === "ok" || response.success) {
         alert("Success! Study Case and Answer Key are stored.");

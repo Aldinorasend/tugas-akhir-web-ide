@@ -9,7 +9,7 @@ import Toolbar from "./Toolbar";
 import { UMLNode, UMLEdge } from "@/app/types/uml";
 import { forwardRef, useImperativeHandle, ForwardedRef } from "react";
 
-import { saveDiagramState, transformToLogicRules } from "@/lib/umlUtils";
+import { saveDiagramState } from "@/lib/umlUtils";
 
 const nodeTypes = {
   classNode: ClassNode,
@@ -22,7 +22,6 @@ const edgeTypes = {
 export interface DiagramCanvasRef {
   getSnapshot: () => { nodes: UMLNode[]; edges: UMLEdge[] };
   getSerializedState: () => string;
-  getLogicRules: () => ReturnType<typeof transformToLogicRules>;
   setNodes: (newNodes: UMLNode[]) => void;
   setDiagram: (newNodes: UMLNode[], newEdges: UMLEdge[]) => void;
 }
@@ -39,7 +38,6 @@ const DiagramInner = forwardRef((props: any, ref: ForwardedRef<DiagramCanvasRef>
   useImperativeHandle(ref, () => ({
     getSnapshot: () => ({ nodes, edges }),
     getSerializedState: () => saveDiagramState(nodes, edges),
-    getLogicRules: () => transformToLogicRules(nodes, edges),
     setNodes: (newNodes: UMLNode[]) => setNodes(newNodes),
     setDiagram: (newNodes: UMLNode[], newEdges: UMLEdge[]) => {
       setNodes(newNodes);
