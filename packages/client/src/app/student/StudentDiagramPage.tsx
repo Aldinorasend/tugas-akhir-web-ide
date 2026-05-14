@@ -7,7 +7,12 @@ import { useEffect, useRef, useState } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import { gradeDiagram } from "@/lib/grader";
 import { supabase } from "@/lib/supabase";
-import { Shuffle } from "lucide-react";
+import { Shuffle, Lock, Unlock, Code, Sparkles, Terminal } from "lucide-react";
+import ProjectExplorer, { FileNode } from "@/components/ProjectExplorer";
+import JavaEditor from "@/components/JavaEditor";
+import OutputPanel from "@/components/OutputPanel";
+import { useSocket } from "@/hooks/useWebsocket";
+import { useWorkspace } from "@/hooks/useWorkspace";
 
 export default function StudentDiagramPage() {
     const [gradeResult, setGradeResult] = useState<{ score: number, feedbacks: string[], isPassed: boolean } | null>(null);
@@ -17,9 +22,75 @@ export default function StudentDiagramPage() {
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [nim, setNim] = useState("");
 
+    // Multiple tabs UI state
+    const [activeTab, setActiveTab] = useState<"diagram" | "code">("diagram");
+    const [isIdeUnlocked, setIsIdeUnlocked] = useState(true);
+    const [showScaffolding, setShowScaffolding] = useState(false);
 
     const diagramRef = useRef<any>(null); // Ref to the canvas
     const searchParams = useSearchParams();
+
+    // Shared Workspace and Socket compiler hook
+    const {
+        nodes,
+        setNodes,
+        selectedId,
+        setSelectedId,
+        currentFile,
+        handleToggleFolder,
+        handleAddFile,
+        handleAddFolder,
+        handleDelete,
+        handleRename,
+        handleCodeChange,
+        flattenFiles,
+    } = useWorkspace();
+
+    const { output, isRunning, runJavaCode } = useSocket();
+
+    const handleRun = () => {
+        runJavaCode(nodes, selectedId, flattenFiles);
+    };
+
+    // Helper to extract and set the IDE starter files
+    const setIDEStarterFiles = (actualData: any) => {
+        if (actualData.initial_code) {
+            try {
+                const parsedCode = typeof actualData.initial_code === "string"
+                    ? JSON.parse(actualData.initial_code)
+                    : actualData.initial_code;
+                if (Array.isArray(parsedCode)) {
+                    setNodes(parsedCode);
+                    const findFirstFile = (list: any[]): any | null => {
+                        for (const node of list) {
+                            if (node.type === "file") return node;
+                            if (node.children) {
+                                const found = findFirstFile(node.children);
+                                if (found) return found;
+                            }
+                        }
+                        return null;
+                    };
+                    const firstFile = findFirstFile(parsedCode);
+                    if (firstFile) {
+                        setSelectedId(firstFile.id);
+                    }
+                }
+            } catch (err) {
+                console.error("Failed to parse initial_code in student IDE", err);
+            }
+        } else {
+            setNodes([
+                {
+                    id: "Main.java",
+                    name: "Main.java",
+                    type: "file",
+                    content: `public class Main {\n    public static void main(String[] args) {\n        // Enter student template code with bugs to solve...\n        System.out.println("Hello, Pathwise!");\n    }\n}`,
+                },
+            ]);
+            setSelectedId("Main.java");
+        }
+    };
 
     // Loading the Study Case
     const loadCase = async () => {
@@ -35,6 +106,7 @@ export default function StudentDiagramPage() {
                         actualData.answer_key = actualData.diagram_rules;
                     }
                     setStudyCase(actualData);
+                    setIDEStarterFiles(actualData);
                 }
             } else {
                 const response = await getRandomStudyCase();
@@ -44,6 +116,7 @@ export default function StudentDiagramPage() {
                         actualData.answer_key = actualData.diagram_rules;
                     }
                     setStudyCase(actualData);
+                    setIDEStarterFiles(actualData);
                     const params = new URLSearchParams(window.location.search);
                     params.set("id", actualData.id);
                     window.history.pushState(null, "", `?${params.toString()}`);
@@ -67,12 +140,15 @@ export default function StudentDiagramPage() {
                 }
                 setStudyCase(actualData);
 
-                // Reset canvas & scoring states
+                // Reset canvas, scoring, active tabs & IDE states
                 setGradeResult(null);
                 setStage(3);
+                setActiveTab("diagram");
+                setIsIdeUnlocked(false);
                 if (diagramRef.current) {
                     diagramRef.current.setDiagram([], []);
                 }
+                setIDEStarterFiles(actualData);
 
                 const params = new URLSearchParams(window.location.search);
                 params.set("id", actualData.id);
@@ -109,6 +185,9 @@ export default function StudentDiagramPage() {
         setIsSubmitting(true);
         const result = gradeDiagram(studyCase.answer_key, studentData);
         setGradeResult(result); // Simpan hasil untuk overlay
+        if (result.isPassed) {
+            setIsIdeUnlocked(true);
+        }
 
         // Simpan ke Supabase tetap berjalan di background
         try {
@@ -149,7 +228,7 @@ export default function StudentDiagramPage() {
             <div className="w-86 h-full overflow-y-auto border-r border-slate-800 bg-[#0f172a] p-6 flex flex-col shadow-2xl">
                 <div className="border-dashed p-3 border border-blue-600 rounded-lg mb-6 flex justify-between items-center bg-blue-950/20">
                     <h1 className="font-bold text-white text-lg">Study Case</h1>
-                    <button 
+                    <button
                         onClick={handleRandomize}
                         title="Load Random Case"
                         className="p-1.5 px-3 bg-slate-800 hover:bg-slate-700 active:scale-95 text-blue-400 hover:text-blue-300 rounded-lg transition-all border border-slate-700/50 flex items-center justify-center gap-1.5"
@@ -187,6 +266,7 @@ export default function StudentDiagramPage() {
                                 key={lvl}
                                 onClick={() => {
                                     setStage(lvl as any);
+                                    setShowScaffolding(true);
                                     if (lvl === 1) triggerStage1Injection();
                                 }}
                                 className={`py-2 rounded-lg text-xs font-bold transition-all ${stage === lvl ? 'bg-blue-600 text-white' : 'bg-slate-800 text-slate-500'}`}
@@ -198,15 +278,130 @@ export default function StudentDiagramPage() {
                 </div>
             </div>
 
-            <div className="flex-1 h-full relative">
-                <DiagramCanvas ref={diagramRef} />
+            <div className="flex-1 h-full flex flex-col bg-[#0c0c0c] overflow-hidden">
+                {/* Tab Selector Header */}
+                <div className="h-14 bg-[#0f172a] border-b border-slate-800 px-6 flex items-center justify-between shrink-0">
+                    <div className="flex items-center gap-3">
+                        <button
+                            onClick={() => setActiveTab("diagram")}
+                            className={`px-4 py-2 rounded-xl text-xs font-black uppercase tracking-wider transition-all flex items-center gap-2 ${activeTab === "diagram"
+                                ? "bg-blue-500/10 text-blue-400 border border-blue-500/20"
+                                : "text-slate-500 hover:text-slate-300 border border-transparent"
+                                }`}
+                        >
+                            <span>UML Diagram Workspace</span>
+                        </button>
+
+                        <button
+                            disabled={!isIdeUnlocked}
+                            onClick={() => setActiveTab("code")}
+                            className={`px-4 py-2 rounded-xl text-xs font-black uppercase tracking-wider transition-all flex items-center gap-2 relative group ${activeTab === "code"
+                                ? "bg-orange-500/10 text-orange-400 border border-orange-500/20"
+                                : isIdeUnlocked
+                                    ? "text-slate-500 hover:text-slate-300 border border-transparent"
+                                    : "text-slate-600 cursor-not-allowed opacity-60"
+                                }`}
+                        >
+                            {isIdeUnlocked ? (
+                                <Unlock className="w-3.5 h-3.5 text-green-500" />
+                            ) : (
+                                <Lock className="w-3.5 h-3.5 text-slate-600" />
+                            )}
+                            <span>Java IDE Code Sandbox</span>
+                            {!isIdeUnlocked && (
+                                <span className="absolute left-1/2 -bottom-10 -translate-x-1/2 bg-slate-950 text-[9px] text-slate-300 px-2 py-1 rounded border border-slate-800 pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity duration-150 whitespace-nowrap z-50 shadow-xl">
+                                    🔒 Match your UML Diagram first to unlock!
+                                </span>
+                            )}
+                        </button>
+                    </div>
+
+                    <div className="flex items-center gap-4">
+                        <button
+                            onClick={() => setShowScaffolding(!showScaffolding)}
+                            className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-[10px] font-bold uppercase tracking-widest transition-all ${showScaffolding
+                                    ? "bg-orange-500/20 text-orange-400 border border-orange-500/30"
+                                    : "bg-slate-800 text-slate-400 border border-slate-700 hover:bg-slate-700"
+                                }`}
+                        >
+                            <Sparkles className={`w-3 h-3 ${showScaffolding ? "animate-pulse" : ""}`} />
+                            <span>{showScaffolding ? "Hide Scaffolding" : "Show Scaffolding"}</span>
+                        </button>
+
+                        {activeTab === "diagram" ? (
+                            <div className="bg-blue-500/10 text-blue-400 border border-blue-500/10 px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-widest flex items-center gap-1.5 shadow-md">
+                                <div className="w-1.5 h-1.5 rounded-full bg-blue-500 animate-pulse" />
+                                Analyzing UML Specifications
+                            </div>
+                        ) : (
+                            <div className="bg-orange-500/10 text-orange-400 border border-orange-500/10 px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-widest flex items-center gap-1.5 shadow-md">
+                                <div className="w-1.5 h-1.5 rounded-full bg-orange-500 animate-pulse" />
+                                Solving starter code errors
+                            </div>
+                        )}
+                    </div>
+                </div>
+
+                {/* Workspace Content */}
+                <div className="flex-1 relative overflow-hidden">
+                    {/* Diagram Tab */}
+                    <div className={`w-full h-full relative ${activeTab === "diagram" ? "" : "hidden"}`}>
+                        <DiagramCanvas ref={diagramRef} />
+                    </div>
+
+                    {/* Code IDE Tab */}
+                    {isIdeUnlocked && (
+                        <div className={`w-full h-full flex overflow-hidden ${activeTab === "code" ? "" : "hidden"}`}>
+                            <ProjectExplorer
+                                nodes={nodes}
+                                selectedId={selectedId}
+                                onFileSelect={(node) => setSelectedId(node.id)}
+                                onToggleFolder={handleToggleFolder}
+                                onAddFile={handleAddFile}
+                                onAddFolder={handleAddFolder}
+                                onDelete={handleDelete}
+                                onRename={handleRename}
+                            />
+
+                            <div className="flex flex-1 flex-col overflow-hidden bg-[#181818]">
+                                {currentFile ? (
+                                    <div className="flex flex-1 flex-col overflow-hidden">
+                                        <JavaEditor
+                                            code={currentFile.content || ""}
+                                            fileName={currentFile.name}
+                                            onCodeChange={handleCodeChange}
+                                            onRun={handleRun}
+                                        />
+                                        <OutputPanel
+                                            output={output}
+                                        />
+                                    </div>
+                                ) : (
+                                    <div className="flex-1 flex flex-col items-center justify-center text-slate-500 gap-3 bg-[#141414]">
+                                        <div className="p-4 bg-white/5 rounded-full border border-white/10">
+                                            <Sparkles className="w-8 h-8 text-slate-400" />
+                                        </div>
+                                        <h3 className="text-sm font-bold text-slate-300">Java Starter Sandbox</h3>
+                                        <p className="text-xs max-w-sm text-center leading-relaxed text-slate-500 animate-pulse">
+                                            Congratulations on matching your UML Diagram! Now select your Java source files in the Explorer to fix errors and write your classes.
+                                        </p>
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+                    )}
+                </div>
             </div>
 
-            <ScaffoldingPanel
-                stage={stage}
-                answerKey={studyCase?.answer_key}
-                diagramRef={diagramRef}
-            />
+            {showScaffolding && (
+                <ScaffoldingPanel
+                    stage={stage}
+                    activeTab={activeTab}
+                    answerKey={studyCase?.answer_key}
+                    diagramRef={diagramRef}
+                    onClose={() => setShowScaffolding(false)}
+                />
+            )}
 
             {gradeResult && (
                 <div className="fixed inset-0 z-[999] flex items-center justify-center bg-black/80 backdrop-blur-sm p-4">
@@ -235,20 +430,33 @@ export default function StudentDiagramPage() {
                             </ul>
                         </div>
 
-                        <div className="grid grid-cols-2 gap-3">
+                        {gradeResult.isPassed ? (
                             <button
-                                onClick={() => setGradeResult(null)}
-                                className="py-3 bg-blue-600 hover:bg-blue-500 text-white rounded-xl font-bold transition-all shadow-lg shadow-blue-600/20"
+                                onClick={() => {
+                                    setGradeResult(null);
+                                    setActiveTab("code");
+                                }}
+                                className="w-full py-4 bg-gradient-to-r from-emerald-500 to-green-600 hover:from-emerald-400 hover:to-green-500 text-white rounded-2xl font-black text-sm uppercase tracking-wider transition-all shadow-xl shadow-green-500/20 flex items-center justify-center gap-2"
                             >
-                                Try Again
+                                <Unlock className="w-4 h-4 animate-bounce" />
+                                <span>Unlock & Start Coding</span>
                             </button>
-                            <button
-                                onClick={() => window.location.href = '/student'} // Atau navigasi lain
-                                className="py-3 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-xl font-bold transition-all"
-                            >
-                                Give Up
-                            </button>
-                        </div>
+                        ) : (
+                            <div className="grid grid-cols-2 gap-3">
+                                <button
+                                    onClick={() => setGradeResult(null)}
+                                    className="py-3 bg-blue-600 hover:bg-blue-500 text-white rounded-xl font-bold transition-all shadow-lg shadow-blue-600/20"
+                                >
+                                    Try Again
+                                </button>
+                                <button
+                                    onClick={() => window.location.href = '/student'} // Atau navigasi lain
+                                    className="py-3 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-xl font-bold transition-all"
+                                >
+                                    Give Up
+                                </button>
+                            </div>
+                        )}
                     </div>
                 </div>
             )}
