@@ -5,9 +5,9 @@ import express from "express";
 const router = express.Router();
 
 router.post('/grade-diagram', async (req, res) => {
-    const { exerciseId, nodes, edges } = req.body;
+    const { exerciseId, nodes, edges, timeElapsed } = req.body;
 
-    const result = await gradeStudentDiagram(exerciseId, nodes, edges);
+    const result = await gradeStudentDiagram(exerciseId, nodes, edges, timeElapsed);
 
     if (result.success) {
         res.json(result);
