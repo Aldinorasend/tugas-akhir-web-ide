@@ -10,8 +10,9 @@ import ProjectExplorer from "@/components/ProjectExplorer";
 import JavaEditor from "@/components/JavaEditor";
 import OutputPanel from "@/components/OutputPanel";
 import { useSocket } from "@/hooks/useWebsocket";
-import { graderDiagram,  } from "@/lib/api";
+import { graderDiagram, } from "@/lib/api";
 import { useWorkspace } from "@/hooks/useWorkspace";
+import { randomUUID } from "crypto";
 
 export default function StudentDiagramPage() {
     const [gradeResult, setGradeResult] = useState<{ score: number, feedbacks: string[], isPassed: boolean } | null>(null);
@@ -47,47 +48,78 @@ export default function StudentDiagramPage() {
         flattenFiles,
     } = useWorkspace();
     const { output, isRunning, runJavaCode } = useSocket();
-    const handleRun =async () => {
-        const allFiles = flattenFiles(nodes).filter(file => file.path.endsWith('.java'));
+    const handleRun = async () => {
+        // const allFiles = flattenFiles(nodes).filter(file => file.path.endsWith('.java'));
 
-        if (allFiles.length === 0) return alert("Tidak ada kode Java!");
+        // if (allFiles.length === 0) return alert("Tidak ada kode Java!");
 
-        try {
-            // Kirim allFiles sebagai array, bukan string gabungan
-            const result = await graderCode(allFiles, studyCase.answer_key.logic_rules);
+        // try {
+        //     // Kirim allFiles sebagai array, bukan string gabungan
+        //     const result = await graderCode(allFiles, studyCase.answer_key.logic_rules);
 
-            if (result.success) {
-                const summary = result.results
-                    .map((r: any) => `${r.status}: ${r.rule}`)
-                    .join('\n');
-                alert(`Hasil Analisis:\n\n${summary}`);
-            }
-        } catch (error: any) {
-            console.error("Test Matcher Error:", error);
-        }
+        //     if (result.success) {
+        //         const summary = result.results
+        //             .map((r: any) => `${r.status}: ${r.rule}`)
+        //             .join('\n');
+        //         alert(`Hasil Analisis:\n\n${summary}`);
+        //     }
+        // } catch (error: any) {
+        //     console.error("Test Matcher Error:", error);
+        // }
+
+        // const exerciseId = studyCase.id;
+        // // nodes
+        // // // Jika rule belum ada, otomatis lolos
+        // // if (nodeClassRules.length === 0) {
+        // //     // Alert sementara
+        // //     alert("Belum ada rule untuk class ini, otomatis lolos.");
+        // //     return;
+        // // }
+
+        // try {
+        //     const result = await graderDiagram(id, exerciseId, nodes, edges, diagramMetrics);
+
+        //     if (!result.isCorrect) {
+        //         // Reset status IDE agar kembali mengunci
+        //         setIsIdeUnlocked(false);
+        //     }
+
+        //     setGradeResult({
+        //         score: result.score / 100,
+        //         feedbacks: result.hints || [],
+        //         isPassed: result.isCorrect
+        //     });
+
+        //     if (result.isCorrect) {
+        //         // Buka kuncinya setelah lolos
+        //         setIsIdeUnlocked(true);
+        //     }
+        // } catch (error) {
+        //     console.error("Error grading diagram:", error);
+        // }
     };
 
-    // Timer Effect
-    useEffect(() => {
-        let interval: NodeJS.Timeout;
-        if (isTimerRunning && !gradeResult?.isPassed) {
-            interval = setInterval(() => {
-                setTimeElapsed(prev => prev + 1);
-            }, 1000);
-        }
-        return () => clearInterval(interval);
-    }, [isTimerRunning, gradeResult?.isPassed]);
+    // // Timer Effect
+    // useEffect(() => {
+    //     let interval: NodeJS.Timeout;
+    //     if (isTimerRunning && !gradeResult?.isPassed) {
+    //         interval = setInterval(() => {
+    //             setTimeElapsed(prev => prev + 1);
+    //         }, 1000);
+    //     }
+    //     return () => clearInterval(interval);
+    // }, [isTimerRunning, gradeResult?.isPassed]);
 
-    const formatTime = (seconds: number) => {
-        const h = Math.floor(seconds / 3600);
-        const m = Math.floor((seconds % 3600) / 60);
-        const s = seconds % 60;
-        return [
-            h > 0 ? h : null,
-            m.toString().padStart(2, '0'),
-            s.toString().padStart(2, '0')
-        ].filter(Boolean).join(':');
-    };
+    // const formatTime = (seconds: number) => {
+    //     const h = Math.floor(seconds / 3600);
+    //     const m = Math.floor((seconds % 3600) / 60);
+    //     const s = seconds % 60;
+    //     return [
+    //         h > 0 ? h : null,
+    //         m.toString().padStart(2, '0'),
+    //         s.toString().padStart(2, '0')
+    //     ].filter(Boolean).join(':');
+    // };
 
     // Helper to extract and set the IDE starter files
     const setIDEStarterFiles = (actualData: any) => {
@@ -179,7 +211,7 @@ export default function StudentDiagramPage() {
                 setStudyCase(actualData);
 
                 // Reset canvas, scoring, active tabs & IDE states
-                setGradeResult(null);
+                // setGradeResult(null);
                 setStage(3);
                 setActiveTab("diagram");
                 setIsIdeUnlocked(false);
@@ -221,17 +253,14 @@ export default function StudentDiagramPage() {
     const handleSubmit = async () => {
         const studentData = diagramRef.current?.getSnapshot();
         if (!studentData || !nim) return alert("Isi NIM dan lengkapi diagram!");
-
+        console.log('studyCaseId', studyCase.answer_key.exercise_id);
         setIsSubmitting(true);
         try {
-            const result = await graderDiagram(studyCase.id, studentData.nodes, studentData.edges, timeElapsed);
+            const result = await graderDiagram(nim, studyCase.answer_key.exercise_id, studentData.nodes, studentData.edges, diagramRef.current?.getMetrics());
 
             if (result.success) {
-                setGradeResult({
-                    score: result.score / 100, // Karena server kirim 0-100, state mau 0-1
-                    feedbacks: result.hints,
-                    isPassed: result.isCorrect
-                }); 
+                console.log("result", result);
+
 
                 if (result.isCorrect) {
                     setIsIdeUnlocked(true); // Membuka akses ke editor Java
@@ -366,9 +395,9 @@ export default function StudentDiagramPage() {
                                 <Timer className="w-3.5 h-3.5 text-blue-500 animate-pulse" />
                                 <span className="text-[9px] font-black uppercase tracking-widest text-slate-500">Elapsed</span>
                             </div>
-                            <span className="text-sm font-mono font-bold text-white tabular-nums">
+                            {/* <span className="text-sm font-mono font-bold text-white tabular-nums">
                                 {formatTime(timeElapsed)}
-                            </span>
+                            </span> */}
                         </div>
 
                         <button

@@ -31,6 +31,7 @@ const DiagramInner = forwardRef((props: any, ref: ForwardedRef<DiagramCanvasRef>
     nodes, edges, onNodesChange, onEdgesChange,
     onConnect, addClass, selectedRelation, setSelectedRelation,
     setNodes, setEdges,
+    diagramMetrics, trackEvaluationSubmit
   } = useDiagram();
 
   // This is the magic part: it makes 'nodes' and 'edges' 
@@ -42,7 +43,10 @@ const DiagramInner = forwardRef((props: any, ref: ForwardedRef<DiagramCanvasRef>
     setDiagram: (newNodes: UMLNode[], newEdges: UMLEdge[]) => {
       setNodes(newNodes);
       setEdges(newEdges);
-    }
+
+    },
+    getMetrics: () => diagramMetrics,
+    logSubmitResult: (isPassed: boolean) => trackEvaluationSubmit(isPassed)
   }));
 
   DiagramInner.displayName = "DiagramInner";

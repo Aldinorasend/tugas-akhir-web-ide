@@ -82,13 +82,13 @@ export const deleteStudyCase = async (id: string) => {
     return response.json();
 };
 
-export const graderDiagram = async (exerciseId: string, nodes: any[], edges: any[], timeElapsed?: number) => {
-    const response = await fetch(`${API_URL}/projects/grade-diagram`, {
+export const graderDiagram = async (user_id: string, exerciseId: string, nodes: any[], edges: any[], diagramMetrics: any) => {
+    const response = await fetch(`${API_URL}/grader/grade-diagram`, {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ exerciseId, nodes, edges, timeElapsed }),
+        body: JSON.stringify({ user_id, exerciseId, nodes, edges, diagramMetrics }),
     });
     if (!response.ok) {
         throw new Error('Gagal menilai diagram');
@@ -107,9 +107,9 @@ export const graderCode = async (current_code: JavaFile[], logic_rules: string[]
             'Content-Type': 'application/json',
         },
         // Pastikan nama properti di sini sama dengan di server
-        body: JSON.stringify({ current_code, logic_rules }), 
+        body: JSON.stringify({ current_code, logic_rules }),
     });
-    
+
     if (!response.ok) {
         throw new Error('Gagal menilai kode');
     }
