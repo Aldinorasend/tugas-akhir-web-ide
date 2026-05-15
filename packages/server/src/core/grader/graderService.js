@@ -1,7 +1,7 @@
 import { supabase } from "../../config/supabase.js";
 import { compareDiagrams } from "./ruleEngine.js";
 
-export const gradeStudentDiagram = async (exerciseId, studentNodes, studentEdges) => {
+export const gradeStudentDiagram = async (exerciseId, studentNodes, studentEdges, timeElapsed) => {
     try {
         // Ambil rule dari tabel 'diagram_rules'
         const { data: rules, error } = await supabase
@@ -19,6 +19,7 @@ export const gradeStudentDiagram = async (exerciseId, studentNodes, studentEdges
             isCorrect: result.finalGrade === 100,
             score: result.finalGrade,
             hints: result.feedbacks, // Untuk Scaffolding L1/L2
+            timeToResolution: timeElapsed,
         };
     } catch (err) {
         console.error("Grader Error:", err.message);

@@ -5,7 +5,7 @@ import ScaffoldingPanel from "@/components/ScaffoldingPanel";
 import { getRandomStudyCase, getStudyCaseById, graderCode } from "@/lib/api";
 import { useEffect, useRef, useState } from "react";
 import { useSearchParams } from "next/navigation";
-import { Shuffle, Lock, Unlock, Sparkles } from "lucide-react";
+import { Shuffle, Lock, Unlock, Sparkles, Timer } from "lucide-react";
 import ProjectExplorer from "@/components/ProjectExplorer";
 import JavaEditor from "@/components/JavaEditor";
 import OutputPanel from "@/components/OutputPanel";
@@ -20,6 +20,8 @@ export default function StudentDiagramPage() {
     const [loading, setLoading] = useState(true);
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [nim, setNim] = useState("");
+    const [timeElapsed, setTimeElapsed] = useState(0);
+    const [isTimerRunning, setIsTimerRunning] = useState(false);
 
     // Multiple tabs UI state
     const [activeTab, setActiveTab] = useState<"diagram" | "code">("diagram");
@@ -63,6 +65,28 @@ export default function StudentDiagramPage() {
         } catch (error: any) {
             console.error("Test Matcher Error:", error);
         }
+    };
+
+    // Timer Effect
+    useEffect(() => {
+        let interval: NodeJS.Timeout;
+        if (isTimerRunning && !gradeResult?.isPassed) {
+            interval = setInterval(() => {
+                setTimeElapsed(prev => prev + 1);
+            }, 1000);
+        }
+        return () => clearInterval(interval);
+    }, [isTimerRunning, gradeResult?.isPassed]);
+
+    const formatTime = (seconds: number) => {
+        const h = Math.floor(seconds / 3600);
+        const m = Math.floor((seconds % 3600) / 60);
+        const s = seconds % 60;
+        return [
+            h > 0 ? h : null,
+            m.toString().padStart(2, '0'),
+            s.toString().padStart(2, '0')
+        ].filter(Boolean).join(':');
     };
 
     // Helper to extract and set the IDE starter files
@@ -139,6 +163,7 @@ export default function StudentDiagramPage() {
             console.error("Failed to load case", err);
         } finally {
             setLoading(false);
+            setIsTimerRunning(true);
         }
     };
 
@@ -172,6 +197,8 @@ export default function StudentDiagramPage() {
             alert("Gagal mengambil study case acak.");
         } finally {
             setLoading(false);
+            setTimeElapsed(0);
+            setIsTimerRunning(true);
         }
     };
 
@@ -197,12 +224,16 @@ export default function StudentDiagramPage() {
 
         setIsSubmitting(true);
         try {
-            const result = await graderDiagram(studyCase.id, studentData.nodes, studentData.edges);
+            const result = await graderDiagram(studyCase.id, studentData.nodes, studentData.edges, timeElapsed);
 
             if (result.success) {
-                setGradeResult(result.grade); // Menampilkan nilai (misal: 80)
+                setGradeResult({
+                    score: result.score / 100, // Karena server kirim 0-100, state mau 0-1
+                    feedbacks: result.hints,
+                    isPassed: result.isCorrect
+                }); 
 
-                if (result.isPassed) {
+                if (result.isCorrect) {
                     setIsIdeUnlocked(true); // Membuka akses ke editor Java
                 }
             }
@@ -249,6 +280,7 @@ export default function StudentDiagramPage() {
                         <span className="text-xs font-bold">Random</span>
                     </button>
                 </div>
+
                 <div className="flex flex-col mb-6">
                     <h3 className="text-md font-semibold text-blue-600 "> Title:</h3>
                     <h3 className="text-md font-semibold text-white">{studyCase?.title}</h3>
@@ -329,6 +361,16 @@ export default function StudentDiagramPage() {
                     </div>
 
                     <div className="flex items-center gap-4">
+                        <div className="flex items-center gap-3 px-4 py-1.5 bg-blue-500/5 border border-blue-500/20 rounded-xl shadow-inner group transition-all hover:bg-blue-500/10">
+                            <div className="flex items-center gap-2">
+                                <Timer className="w-3.5 h-3.5 text-blue-500 animate-pulse" />
+                                <span className="text-[9px] font-black uppercase tracking-widest text-slate-500">Elapsed</span>
+                            </div>
+                            <span className="text-sm font-mono font-bold text-white tabular-nums">
+                                {formatTime(timeElapsed)}
+                            </span>
+                        </div>
+
                         <button
                             onClick={() => setShowScaffolding(!showScaffolding)}
                             className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-[10px] font-bold uppercase tracking-widest transition-all ${showScaffolding
