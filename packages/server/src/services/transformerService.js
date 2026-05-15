@@ -42,7 +42,7 @@ export const transformDiagramToLogic = (nodes = [], edges = []) => {
 
             // Logika pewarisan (Inheritance)
             if (edge.data?.type === "inheritance") {
-                logicRules.push(`extends(${sourceName}, ${targetName}).`);
+                logicRules.push(`extends(${targetName}, ${sourceName}).`);
             }
         }
     });

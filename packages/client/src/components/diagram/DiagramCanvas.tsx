@@ -73,6 +73,7 @@ const DiagramInner = forwardRef((props: any, ref: ForwardedRef<DiagramCanvasRef>
         onNodesChange={onNodesChange}
         onEdgesChange={onEdgesChange}
         onConnect={onConnect}
+        panActivationKeyCode={null}
         fitView
         snapToGrid
         snapGrid={[15, 15]}

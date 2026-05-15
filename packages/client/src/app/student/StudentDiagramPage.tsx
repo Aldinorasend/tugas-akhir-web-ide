@@ -2,17 +2,15 @@
 
 import DiagramCanvas from "@/components/diagram/DiagramCanvas";
 import ScaffoldingPanel from "@/components/ScaffoldingPanel";
-import { getRandomStudyCase, getStudyCaseById } from "@/lib/api";
+import { getRandomStudyCase, getStudyCaseById, graderCode } from "@/lib/api";
 import { useEffect, useRef, useState } from "react";
-import { useSearchParams, useRouter } from "next/navigation";
-import { gradeDiagram } from "@/lib/grader";
-import { supabase } from "@/lib/supabase";
-import { Shuffle, Lock, Unlock, Code, Sparkles, Terminal } from "lucide-react";
-import ProjectExplorer, { FileNode } from "@/components/ProjectExplorer";
+import { useSearchParams } from "next/navigation";
+import { Shuffle, Lock, Unlock, Sparkles } from "lucide-react";
+import ProjectExplorer from "@/components/ProjectExplorer";
 import JavaEditor from "@/components/JavaEditor";
 import OutputPanel from "@/components/OutputPanel";
 import { useSocket } from "@/hooks/useWebsocket";
-import { graderDiagram } from "@/lib/api";
+import { graderDiagram,  } from "@/lib/api";
 import { useWorkspace } from "@/hooks/useWorkspace";
 
 export default function StudentDiagramPage() {
@@ -46,11 +44,25 @@ export default function StudentDiagramPage() {
         handleCodeChange,
         flattenFiles,
     } = useWorkspace();
-
     const { output, isRunning, runJavaCode } = useSocket();
+    const handleRun =async () => {
+        const allFiles = flattenFiles(nodes).filter(file => file.path.endsWith('.java'));
 
-    const handleRun = () => {
-        runJavaCode(nodes, selectedId, flattenFiles);
+        if (allFiles.length === 0) return alert("Tidak ada kode Java!");
+
+        try {
+            // Kirim allFiles sebagai array, bukan string gabungan
+            const result = await graderCode(allFiles, studyCase.answer_key.logic_rules);
+
+            if (result.success) {
+                const summary = result.results
+                    .map((r: any) => `${r.status}: ${r.rule}`)
+                    .join('\n');
+                alert(`Hasil Analisis:\n\n${summary}`);
+            }
+        } catch (error: any) {
+            console.error("Test Matcher Error:", error);
+        }
     };
 
     // Helper to extract and set the IDE starter files
