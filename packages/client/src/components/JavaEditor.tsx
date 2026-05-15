@@ -3,8 +3,6 @@
 import React from "react";
 import Editor from "@monaco-editor/react";
 import { Play, FileCode, CheckCircle2 } from "lucide-react";
-import { tr } from "framer-motion/client";
-import { on } from "events";
 
 interface JavaEditorProps {
   code: string;
@@ -47,6 +45,7 @@ export default function JavaEditor({ code, fileName, onCodeChange, onRun }: Java
           height="100%"
           defaultLanguage="java"
           theme="vs-dark"
+          path={fileName}
           value={code}
           onChange={onCodeChange}
           options={{
@@ -58,7 +57,14 @@ export default function JavaEditor({ code, fileName, onCodeChange, onRun }: Java
             scrollBeyondLastLine: false,
             cursorSmoothCaretAnimation: "on",
             smoothScrolling: true,
-            wordWrap: "on"
+            wordWrap: "on",
+            scrollbar: {
+              vertical: "visible",
+              horizontal: "visible",
+              useShadows: false,
+              verticalScrollbarSize: 10,
+              horizontalScrollbarSize: 10,
+            }
           }}
         />
       </div>

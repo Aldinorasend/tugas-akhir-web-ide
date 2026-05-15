@@ -1,5 +1,3 @@
-// lib/api.ts
-import { supabase } from "./supabase";
 const API_URL = "http://localhost:4000/api";
 
 export const getAllStudyCases = async () => {
@@ -83,3 +81,37 @@ export const deleteStudyCase = async (id: string) => {
     }
     return response.json();
 };
+
+export const graderDiagram = async (exerciseId: string, nodes: any[], edges: any[]) => {
+    const response = await fetch(`${API_URL}/projects/grade-diagram`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ exerciseId, nodes, edges }),
+    });
+    if (!response.ok) {
+        throw new Error('Gagal menilai diagram');
+    }
+    return response.json();
+}
+
+interface JavaFile {
+    path: string;
+    content: string;
+}
+export const graderCode = async (current_code: JavaFile[], logic_rules: string[]) => {
+    const response = await fetch(`${API_URL}/projects/compare-code`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        // Pastikan nama properti di sini sama dengan di server
+        body: JSON.stringify({ current_code, logic_rules }), 
+    });
+    
+    if (!response.ok) {
+        throw new Error('Gagal menilai kode');
+    }
+    return response.json();
+}

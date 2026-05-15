@@ -1,4 +1,5 @@
 import { supabase } from "../../config/supabase.js";
+import { transformDiagramToLogic } from "../../services/transformerService.js";
 
 export const getAllStudyCases = async (req, res) => {
     const { data, error } = await supabase
@@ -58,7 +59,7 @@ export const getStudyCaseById = async (req, res) => {
 }
 
 export const createStudyCase = async (req, res) => {
-    const { title, description, initial_code, category, nodes, edges, logic_rules } = req.body;
+    const { title, description, initial_code, category, nodes, edges } = req.body;
     try {
         const { data: studyCase, error: caseError } = await supabase
             .from('exercises')
@@ -66,20 +67,21 @@ export const createStudyCase = async (req, res) => {
             .select()
             .single(); // Ambil satu object hasil insert
 
+        const logicRules = transformDiagramToLogic(nodes, edges);
         if (caseError) throw caseError;
 
         const exerciseId = studyCase.id;
 
         const { data: diagram, error: diagramError } = await supabase
             .from('diagram_rules')
-            .insert({ nodes, edges, exercise_id: exerciseId, logic_rules })
+            .insert({ nodes, edges, exercise_id: exerciseId, logic_rules: logicRules })
             .select();
 
         if (diagramError) throw diagramError;
 
         res.json({
             status: "ok",
-            data: { studyCase, diagram }
+            data: { studyCase, diagram, logicRules }
         });
 
     } catch (error) {
@@ -91,7 +93,7 @@ export const createStudyCase = async (req, res) => {
 
 export const updateStudyCase = async (req, res) => {
     const { id } = req.params;
-    const { title, description, initial_code, category, nodes, edges, logic_rules } = req.body;
+    const { title, description, initial_code, category, nodes, edges } = req.body;
 
     try {
         // 1. Update exercises table
@@ -102,6 +104,9 @@ export const updateStudyCase = async (req, res) => {
             .select();
 
         if (caseError) throw caseError;
+
+        // update logic_rules
+        const logicRules = transformDiagramToLogic(nodes, edges);
 
         // 2. Update or insert diagram_rules table
         const { data: existingRules, error: fetchError } = await supabase
@@ -115,7 +120,7 @@ export const updateStudyCase = async (req, res) => {
         if (existingRules && existingRules.length > 0) {
             const { data: updatedDiagram, error: diagramError } = await supabase
                 .from('diagram_rules')
-                .update({ nodes, edges, logic_rules })
+                .update({ nodes, edges, logic_rules: logicRules })
                 .eq('exercise_id', id)
                 .select();
             if (diagramError) throw diagramError;
@@ -123,7 +128,7 @@ export const updateStudyCase = async (req, res) => {
         } else {
             const { data: insertedDiagram, error: diagramError } = await supabase
                 .from('diagram_rules')
-                .insert({ nodes, edges, exercise_id: id, logic_rules })
+                .insert({ nodes, edges, exercise_id: id, logic_rules: logicRules })
                 .select();
             if (diagramError) throw diagramError;
             diagram = insertedDiagram;

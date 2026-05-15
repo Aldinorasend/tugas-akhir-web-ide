@@ -227,6 +227,7 @@ export const useWorkspace = (initialNodes: FileNode[] = [
     selectedId,
     setSelectedId,
     currentFile,
+    findNode,
     handleToggleFolder,
     handleAddFile,
     handleAddFolder,
