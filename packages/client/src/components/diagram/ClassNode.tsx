@@ -102,42 +102,34 @@ export default function ClassNode({
   const isNotSelected = isAbstract === undefined && isInterface === undefined;
 
   return (
-    <div className={`bg-slate-800 border-2 ${
-      isNotSelected 
-        ? 'border-rose-500/40 border-dashed' 
-        : isInterface 
-          ? 'border-purple-500/50' 
-          : isAbstract 
-            ? 'border-amber-500/50' 
-            : 'border-blue-500/40'
-    } rounded-xl shadow-2xl overflow-hidden min-w-[260px] transition-all hover:border-blue-500/50 group text-slate-200`}>
+    <div className={`bg-slate-900 border border-slate-700 rounded-lg shadow-lg overflow-hidden min-w-[260px] text-slate-200 font-sans`}>
       {/* Handles for connections */}
-      <Handle type="target" position={Position.Top} className="w-3 h-3 bg-blue-500 border-2 border-slate-800" />
-      <Handle type="source" position={Position.Bottom} className="w-3 h-3 bg-blue-500 border-2 border-slate-800" />
-      <Handle type="target" position={Position.Left} className="w-3 h-3 bg-blue-500 border-2 border-slate-800" />
-      <Handle type="source" position={Position.Right} className="w-3 h-3 bg-blue-500 border-2 border-slate-800" />
+      <Handle type="target" position={Position.Top} className="w-2.5 h-2.5 bg-slate-400 border border-slate-900" />
+      <Handle type="source" position={Position.Bottom} className="w-2.5 h-2.5 bg-slate-400 border border-slate-900" />
+      <Handle type="target" position={Position.Left} className="w-2.5 h-2.5 bg-slate-400 border border-slate-900" />
+      <Handle type="source" position={Position.Right} className="w-2.5 h-2.5 bg-slate-400 border border-slate-900" />
 
       {/* Class Name Header */}
-      <div className="bg-slate-900 p-3 border-b-2 border-slate-700">
+      <div className="bg-slate-950 p-2.5 border-b border-slate-700">
         <div className="flex items-center justify-between mb-2">
-          <div className="flex gap-2">
+          <div className="flex gap-1.5">
             {!readOnly && (
               <>
                 <button
                   onClick={(e) => { e.stopPropagation(); toggleConcrete(); }}
-                  className={`text-[9px] px-1.5 py-0.5 rounded border font-bold transition-colors ${isAbstract === false && isInterface === false ? 'bg-blue-500/20 border-blue-500/50 text-blue-400' : 'bg-slate-800 border-slate-700 text-slate-500 hover:border-slate-600'}`}
+                  className={`text-[9px] px-1.5 py-0.5 rounded font-semibold transition-colors ${isAbstract === false && isInterface === false ? 'bg-slate-800 text-slate-200 border border-slate-650' : 'bg-slate-900 text-slate-500 border border-slate-800 hover:border-slate-700'}`}
                 >
                   CLASS
                 </button>
                 <button
                   onClick={(e) => { e.stopPropagation(); toggleAbstract(); }}
-                  className={`text-[9px] px-1.5 py-0.5 rounded border font-bold transition-colors ${isAbstract ? 'bg-amber-500/20 border-amber-500/50 text-amber-400' : 'bg-slate-800 border-slate-700 text-slate-500 hover:border-slate-600'}`}
+                  className={`text-[9px] px-1.5 py-0.5 rounded font-semibold transition-colors ${isAbstract ? 'bg-slate-800 text-slate-200 border border-slate-650' : 'bg-slate-900 text-slate-500 border border-slate-800 hover:border-slate-700'}`}
                 >
                   ABSTRACT
                 </button>
                 <button
                   onClick={(e) => { e.stopPropagation(); toggleInterface(); }}
-                  className={`text-[9px] px-1.5 py-0.5 rounded border font-bold transition-colors ${isInterface ? 'bg-purple-500/20 border-purple-500/50 text-purple-400' : 'bg-slate-800 border-slate-700 text-slate-500 hover:border-slate-600'}`}
+                  className={`text-[9px] px-1.5 py-0.5 rounded font-semibold transition-colors ${isInterface ? 'bg-slate-800 text-slate-200 border border-slate-650' : 'bg-slate-900 text-slate-500 border border-slate-800 hover:border-slate-700'}`}
                 >
                   INTERFACE
                 </button>
@@ -147,19 +139,19 @@ export default function ClassNode({
           {!readOnly && (
             <button
               onClick={handleDelete}
-              className="nodrag nopan text-slate-500 hover:text-red-400 opacity-0 group-hover:opacity-100 transition-opacity p-1 hover:bg-red-500/10 rounded"
+              className="nodrag nopan text-slate-500 hover:text-red-400 p-1 hover:bg-slate-800 rounded transition-colors"
             >
-              <Trash2 size={14} />
+              <Trash2 size={13} />
             </button>
           )}
         </div>
 
         <div className="flex flex-col items-center">
-          {isNotSelected && <span className="text-[9px] text-rose-400 font-bold mb-1 tracking-wider uppercase bg-rose-500/10 px-1.5 py-0.5 rounded border border-rose-500/20">« Pilih Tipe Kelas »</span>}
-          {isInterface && <span className="text-[10px] text-purple-400 font-bold mb-1">«interface»</span>}
-          {isAbstract && <span className="text-[10px] text-amber-400 font-bold mb-1">«abstract»</span>}
+          {isNotSelected && <span className="text-[9px] text-slate-400 font-semibold mb-1 bg-slate-900 px-1.5 py-0.5 rounded border border-slate-800">« Pilih Tipe »</span>}
+          {isInterface && <span className="text-[10px] text-slate-400 font-semibold mb-0.5">«interface»</span>}
+          {isAbstract && <span className="text-[10px] text-slate-400 font-semibold mb-0.5">«abstract»</span>}
           {readOnly ? (
-            <span className={`font-bold text-center w-full px-2 py-1 text-white ${isAbstract ? 'italic' : ''}`}>
+            <span className={`font-bold text-center text-sm w-full px-2 py-0.5 text-white ${isAbstract ? 'italic' : ''}`}>
               {name}
             </span>
           ) : (
@@ -167,7 +159,7 @@ export default function ClassNode({
               type="text"
               value={name}
               onChange={(e) => handleNameChange(e.target.value)}
-              className={`nodrag nopan font-bold text-center w-full bg-slate-800 outline-none focus:ring-1 focus:ring-blue-500/50 px-2 py-1 rounded transition-all text-white ${isAbstract ? 'italic' : ''}`}
+              className={`nodrag nopan font-bold text-center text-sm w-full bg-slate-900 border border-slate-800 outline-none focus:border-slate-700 px-2 py-0.5 rounded transition-all text-white ${isAbstract ? 'italic' : ''}`}
               placeholder="ClassName"
             />
           )}
@@ -175,31 +167,31 @@ export default function ClassNode({
       </div>
 
       {/* Attributes Section */}
-      <div className="p-3 border-b-2 border-slate-700 space-y-2 bg-slate-800/50">
-        <div className="flex justify-between items-center mb-1">
-          <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Attributes</span>
+      <div className="p-2.5 border-b border-slate-700 space-y-1.5 bg-slate-900/40">
+        <div className="flex justify-between items-center mb-0.5">
+          <span className="text-[10px] font-semibold text-slate-400">Attributes</span>
           {!readOnly && (
-            <button onClick={addAttribute} className="nodrag nopan text-slate-500 hover:text-blue-400 p-1 hover:bg-blue-500/10 rounded transition-colors">
-              <Plus size={14} />
+            <button onClick={addAttribute} className="nodrag nopan text-slate-500 hover:text-slate-300 p-0.5 rounded transition-colors">
+              <Plus size={13} />
             </button>
           )}
         </div>
         {attributes.length === 0 && <div className="text-[10px] text-slate-600 italic px-1">No attributes defined</div>}
         {attributes.map((attr) => (
-          <div key={attr.id} className="flex items-center gap-1.5 group/row">
+          <div key={attr.id} className="flex items-center gap-1 group/row">
             {readOnly ? (
-              <div className="flex items-center gap-1.5 text-[11px] w-full">
-                <span className="text-blue-400 font-bold w-4">{attr.access}</span>
+              <div className="flex items-center gap-1 text-[11px] w-full">
+                <span className="text-slate-400 font-semibold w-3.5">{attr.access}</span>
                 <span className="text-slate-300">{attr.name}</span>
-                <span className="text-slate-600">:</span>
-                <span className="text-emerald-400 font-mono">{attr.type}</span>
+                <span className="text-slate-500">:</span>
+                <span className="text-slate-300 font-mono">{attr.type}</span>
               </div>
             ) : (
               <>
                 <select
                   value={attr.access}
                   onChange={(e) => updateAttribute(attr.id, { access: e.target.value as AccessModifier })}
-                  className="nodrag nopan bg-slate-900 text-blue-400 text-[11px] font-bold rounded-md outline-none px-1 py-1 border border-slate-700 focus:border-blue-500/50"
+                  className="nodrag nopan bg-slate-950 text-slate-300 text-[11px] font-semibold rounded outline-none px-1 py-0.5 border border-slate-800 focus:border-slate-700"
                 >
                   <option value="+">+</option>
                   <option value="-">-</option>
@@ -209,14 +201,14 @@ export default function ClassNode({
                   type="text"
                   value={attr.name}
                   onChange={(e) => updateAttribute(attr.id, { name: e.target.value })}
-                  className="nodrag nopan text-[11px] w-full bg-slate-900 border border-slate-700 outline-none focus:border-blue-500/50 px-1.5 py-1 rounded transition-colors text-slate-300"
+                  className="nodrag nopan text-[11px] w-full bg-slate-950 border border-slate-800 outline-none focus:border-slate-700 px-1.5 py-0.5 rounded text-slate-300"
                   placeholder="name"
                 />
-                <span className="text-[11px] text-slate-600 font-bold">:</span>
+                <span className="text-[11px] text-slate-500">:</span>
                 <select
                   value={attr.type}
                   onChange={(e) => updateAttribute(attr.id, { type: e.target.value })}
-                  className="nodrag nopan text-[11px] w-24 bg-slate-900 border border-slate-700 outline-none focus:border-blue-500/50 px-1 py-1 rounded text-emerald-400 font-mono"
+                  className="nodrag nopan text-[11px] w-20 bg-slate-950 border border-slate-800 outline-none focus:border-slate-700 px-1 py-0.5 rounded text-slate-300 font-mono"
                 >
                   {COMMON_TYPES.filter(t => t !== 'void').map(type => (
                     <option key={type} value={type}>{type}</option>
@@ -225,8 +217,8 @@ export default function ClassNode({
                     <option value={attr.type}>{attr.type}</option>
                   )}
                 </select>
-                <button onClick={(e) => removeAttribute(e, attr.id)} className="nodrag nopan text-slate-500 hover:text-red-400 opacity-100 group-hover/row:opacity-100 p-1 hover:bg-red-500/10 rounded transition-all flex items-center justify-center">
-                  <Trash2 size={12} />
+                <button onClick={(e) => removeAttribute(e, attr.id)} className="nodrag nopan text-slate-500 hover:text-red-400 p-0.5 rounded transition-colors flex items-center justify-center">
+                  <Trash2 size={11} />
                 </button>
               </>
             )}
@@ -235,31 +227,31 @@ export default function ClassNode({
       </div>
 
       {/* Methods Section */}
-      <div className="p-3 space-y-2 bg-slate-800/30">
-        <div className="flex justify-between items-center mb-1">
-          <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Methods</span>
+      <div className="p-2.5 space-y-1.5 bg-slate-900/20">
+        <div className="flex justify-between items-center mb-0.5">
+          <span className="text-[10px] font-semibold text-slate-400">Methods</span>
           {!readOnly && (
-            <button onClick={addMethod} className="nodrag nopan text-slate-500 hover:text-blue-400 p-1 hover:bg-blue-500/10 rounded transition-colors">
-              <Plus size={14} />
+            <button onClick={addMethod} className="nodrag nopan text-slate-500 hover:text-slate-300 p-0.5 rounded transition-colors">
+              <Plus size={13} />
             </button>
           )}
         </div>
         {methods.length === 0 && <div className="text-[10px] text-slate-600 italic px-1">No methods defined</div>}
         {methods.map((method) => (
-          <div key={method.id} className="flex items-center gap-1.5 group/row">
+          <div key={method.id} className="flex items-center gap-1 group/row">
             {readOnly ? (
-              <div className="flex items-center gap-1.5 text-[11px] w-full">
-                <span className="text-blue-400 font-bold w-4">{method.access}</span>
+              <div className="flex items-center gap-1 text-[11px] w-full">
+                <span className="text-slate-400 font-semibold w-3.5">{method.access}</span>
                 <span className="text-slate-300">{method.name}</span>
-                <span className="text-slate-600">():</span>
-                <span className="text-amber-400 font-mono">{method.returnType}</span>
+                <span className="text-slate-500">():</span>
+                <span className="text-slate-300 font-mono">{method.returnType}</span>
               </div>
             ) : (
               <>
                 <select
                   value={method.access}
                   onChange={(e) => updateMethod(method.id, { access: e.target.value as AccessModifier })}
-                  className="nodrag nopan bg-slate-900 text-blue-400 text-[11px] font-bold rounded-md outline-none px-1 py-1 border border-slate-700 focus:border-blue-500/50"
+                  className="nodrag nopan bg-slate-950 text-slate-300 text-[11px] font-semibold rounded outline-none px-1 py-0.5 border border-slate-800 focus:border-slate-700"
                 >
                   <option value="+">+</option>
                   <option value="-">-</option>
@@ -269,14 +261,14 @@ export default function ClassNode({
                   type="text"
                   value={method.name}
                   onChange={(e) => updateMethod(method.id, { name: e.target.value })}
-                  className="nodrag nopan text-[11px] w-full bg-slate-900 border border-slate-700 outline-none focus:border-blue-500/50 px-1.5 py-1 rounded transition-colors text-slate-300"
+                  className="nodrag nopan text-[11px] w-full bg-slate-950 border border-slate-800 outline-none focus:border-slate-700 px-1.5 py-0.5 rounded text-slate-300"
                   placeholder="method"
                 />
-                <span className="text-[11px] text-slate-600 font-bold">():</span>
+                <span className="text-[11px] text-slate-500">():</span>
                 <select
                   value={method.returnType}
                   onChange={(e) => updateMethod(method.id, { returnType: e.target.value })}
-                  className="nodrag nopan text-[11px] w-24 bg-slate-900 border border-slate-700 outline-none focus:border-blue-500/50 px-1 py-1 rounded text-amber-400 font-mono"
+                  className="nodrag nopan text-[11px] w-20 bg-slate-950 border border-slate-800 outline-none focus:border-slate-700 px-1 py-0.5 rounded text-slate-300 font-mono"
                 >
                   {COMMON_TYPES.map(type => (
                     <option key={type} value={type}>{type}</option>
@@ -285,8 +277,8 @@ export default function ClassNode({
                     <option value={method.returnType}>{method.returnType}</option>
                   )}
                 </select>
-                <button onClick={(e) => removeMethod(e, method.id)} className="nodrag nopan text-slate-500 hover:text-red-400 opacity-100 group-hover/row:opacity-100 p-1 hover:bg-red-500/10 rounded transition-all flex items-center justify-center">
-                  <Trash2 size={12} />
+                <button onClick={(e) => removeMethod(e, method.id)} className="nodrag nopan text-slate-500 hover:text-red-400 p-0.5 rounded transition-colors flex items-center justify-center">
+                  <Trash2 size={11} />
                 </button>
               </>
             )}
@@ -296,7 +288,3 @@ export default function ClassNode({
     </div>
   );
 }
-
-
-
-

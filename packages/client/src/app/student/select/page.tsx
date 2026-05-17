@@ -3,8 +3,6 @@
 import React from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { motion } from "framer-motion";
-import { HelpCircle, Sparkles, ArrowLeft, ArrowRight, BookOpen, Layers, LogOut } from "lucide-react";
 
 export default function StudentRouteSelection() {
   const router = useRouter();
@@ -25,67 +23,50 @@ export default function StudentRouteSelection() {
     localStorage.removeItem("user");
     router.push("/login");
   };
-  return (
-    <div className="min-h-screen bg-[#0f172a] text-white flex flex-col items-center justify-center p-6 relative overflow-hidden">
-      {/* Decorative background lines */}
-      <div className="absolute top-0 left-0 w-full h-full overflow-hidden -z-10">
-        <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-blue-600/10 blur-[120px] rounded-full" />
-        <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-indigo-600/10 blur-[120px] rounded-full" />
-      </div>
 
-      <motion.div
-        initial={{ opacity: 0, y: 15 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.6 }}
-        className="text-center mb-12 w-full max-w-3xl"
-      >
-        <div className="flex justify-between items-center w-full mb-6">
+  return (
+    <div className="min-h-screen bg-[#0f172a] text-slate-200 flex flex-col items-center justify-center p-6 font-sans">
+      <div className="w-full max-w-3xl">
+        <div className="flex justify-between items-center w-full mb-8">
           <Link 
             href="/" 
-            className="inline-flex items-center gap-2 text-xs font-bold uppercase tracking-widest text-slate-500 hover:text-slate-300 transition-colors"
+            className="text-xs font-semibold text-slate-500 hover:text-slate-300 transition-colors"
           >
-            <ArrowLeft size={14} /> Back to Home
+            ← Kembali ke Beranda
           </Link>
           {user && (
             <button
               onClick={handleLogout}
-              className="inline-flex items-center gap-1.5 text-xs font-bold uppercase tracking-widest text-rose-500 hover:text-rose-400 transition-colors bg-rose-500/5 px-3 py-1.5 rounded-lg border border-rose-500/10"
+              className="text-xs font-semibold text-rose-400 hover:text-rose-300 transition-colors bg-rose-950/20 px-3 py-1.5 rounded border border-rose-900"
             >
-              <LogOut size={12} /> Logout
+              Logout
             </button>
           )}
         </div>
         
-        {user && (
-          <p className="text-blue-400 text-xs font-bold uppercase tracking-widest mb-2">
-            Selamat datang, {user.full_name || user.nim_nip}
+        <div className="text-center mb-8">
+          {user && (
+            <p className="text-blue-400 text-xs font-semibold mb-1">
+              Selamat datang, {user.full_name || user.nim_nip}
+            </p>
+          )}
+          <h1 className="text-2xl font-bold text-white mb-2">
+            Pilih Mode Pembelajaran
+          </h1>
+          <p className="text-slate-400 text-xs max-w-md mx-auto leading-relaxed">
+            Silakan pilih salah satu kelompok/mode di bawah ini untuk memulai sesi pembelajaran.
           </p>
-        )}
-        <h1 className="text-3xl font-extrabold tracking-tight mb-3">
-          Pilih Mode Pembelajaran
-        </h1>
-        <p className="text-slate-400 text-sm max-w-md mx-auto">
-          Silakan pilih mode pengerjaan di bawah ini untuk memulai sesi diagram UML dan pemrograman Java.
-        </p>
-      </motion.div>
+        </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 w-full max-w-3xl">
-        {/* Route 1: Adaptive Scaffolding (Experimental Group) */}
-        <motion.div
-          whileHover={{ scale: 1.01, translateY: -2 }}
-          whileTap={{ scale: 0.99 }}
-          className="group"
-        >
-          <Link href="/student">
-            <div className="h-full p-8 bg-slate-900 border border-slate-800 rounded-2xl hover:border-blue-500/50 hover:bg-slate-900/90 shadow-xl transition-all flex flex-col justify-between">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          {/* Route 1: Adaptive Scaffolding (Experimental Group) */}
+          <Link href="/student" className="block group">
+            <div className="h-full p-6 bg-slate-900 border border-slate-800 rounded-lg hover:border-slate-700 transition-all flex flex-col justify-between hover:bg-slate-900/80">
               <div>
-                <div className="bg-blue-500/10 p-3 rounded-xl w-fit mb-5 text-blue-400">
-                  <Layers size={24} />
-                </div>
-                <h2 className="text-xl font-bold mb-2 flex items-center gap-2">
+                <h2 className="text-lg font-bold text-white mb-1">
                   Adaptive Scaffolding
                 </h2>
-                <span className="inline-block text-[9px] font-black uppercase tracking-widest bg-blue-500/10 text-blue-400 px-2 py-0.5 rounded mb-4">
+                <span className="inline-block text-[9px] font-semibold bg-blue-950/40 text-blue-400 px-2 py-0.5 rounded border border-blue-900 mb-3">
                   Kelompok Eksperimen
                 </span>
                 <p className="text-xs text-slate-400 leading-relaxed">
@@ -93,29 +74,20 @@ export default function StudentRouteSelection() {
                 </p>
               </div>
               
-              <div className="mt-8 flex items-center gap-2 text-xs font-bold uppercase tracking-widest text-blue-400">
-                Pilih Mode Ini <ArrowRight size={14} />
+              <div className="mt-6 text-xs font-semibold text-blue-400 group-hover:underline">
+                Masuk Mode Eksperimen →
               </div>
             </div>
           </Link>
-        </motion.div>
 
-        {/* Route 2: Non-Scaffolding (Control Group) */}
-        <motion.div
-          whileHover={{ scale: 1.01, translateY: -2 }}
-          whileTap={{ scale: 0.99 }}
-          className="group"
-        >
-          <Link href="/student/non-scaffolding">
-            <div className="h-full p-8 bg-slate-900 border border-slate-800 rounded-2xl hover:border-slate-700 hover:bg-slate-900/90 shadow-xl transition-all flex flex-col justify-between">
+          {/* Route 2: Non-Scaffolding (Control Group) */}
+          <Link href="/student/non-scaffolding" className="block group">
+            <div className="h-full p-6 bg-slate-900 border border-slate-800 rounded-lg hover:border-slate-700 transition-all flex flex-col justify-between hover:bg-slate-900/80">
               <div>
-                <div className="bg-slate-800 p-3 rounded-xl w-fit mb-5 text-slate-400">
-                  <BookOpen size={24} />
-                </div>
-                <h2 className="text-xl font-bold mb-2">
+                <h2 className="text-lg font-bold text-white mb-1">
                   Non-Scaffolding
                 </h2>
-                <span className="inline-block text-[9px] font-black uppercase tracking-widest bg-slate-800 text-slate-400 px-2 py-0.5 rounded mb-4">
+                <span className="inline-block text-[9px] font-semibold bg-slate-900 text-slate-400 px-2 py-0.5 rounded border border-slate-800 mb-3">
                   Kelompok Kontrol
                 </span>
                 <p className="text-xs text-slate-400 leading-relaxed">
@@ -123,16 +95,16 @@ export default function StudentRouteSelection() {
                 </p>
               </div>
 
-              <div className="mt-8 flex items-center gap-2 text-xs font-bold uppercase tracking-widest text-slate-400">
-                Pilih Mode Ini <ArrowRight size={14} />
+              <div className="mt-6 text-xs font-semibold text-slate-400 group-hover:underline">
+                Masuk Mode Kontrol →
               </div>
             </div>
           </Link>
-        </motion.div>
-      </div>
+        </div>
 
-      <div className="mt-12 text-slate-600 text-[10px] text-center max-w-sm">
-        Pilihan ini disediakan untuk keperluan evaluasi A/B testing guna mengukur pengaruh efektivitas scaffolding adaptif.
+        <div className="mt-12 text-slate-650 text-[10px] text-center max-w-sm mx-auto">
+          Pilihan ini disediakan untuk keperluan evaluasi A/B testing guna mengukur pengaruh efektivitas scaffolding adaptif.
+        </div>
       </div>
     </div>
   );

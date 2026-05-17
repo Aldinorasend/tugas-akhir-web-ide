@@ -83,7 +83,7 @@ const DiagramInner = forwardRef((props: any, ref: ForwardedRef<DiagramCanvasRef>
         snapGrid={[15, 15]}
         style={{ background: "transparent" }}
       >
-        <Background color="#334155" gap={30} variant={BackgroundVariant.Dots} />
+        <Background color="#1e293b" gap={24} variant={BackgroundVariant.Lines} />
         <Controls
           className="bg-slate-900 border border-slate-700 rounded-lg overflow-hidden shadow-2xl scale-110 origin-bottom-left !left-6 !bottom-6"
           showInteractive={false}

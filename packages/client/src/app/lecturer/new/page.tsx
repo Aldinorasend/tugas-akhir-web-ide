@@ -4,7 +4,7 @@ import DiagramCanvas, { DiagramCanvasRef } from "@/components/diagram/DiagramCan
 import { createStudyCase } from "@/lib/api"
 
 import { useRef, useState, useEffect, useCallback } from "react";
-import { Rocket, Info, ChevronRight, ChevronDown, Save, Code, Sparkles, Terminal } from "lucide-react";
+import { Rocket, Info, ChevronRight, ChevronDown, Save, Code, Code2, Terminal } from "lucide-react";
 import ProjectExplorer, { FileNode } from "@/components/ProjectExplorer";
 import JavaEditor from "@/components/JavaEditor";
 import OutputPanel from "@/components/OutputPanel";
@@ -291,7 +291,7 @@ export default function NewStudyCasePage() {
               ) : (
                 <div className="flex-1 flex flex-col items-center justify-center text-slate-500 gap-3 bg-[#141414]">
                   <div className="p-4 bg-white/5 rounded-full border border-white/10">
-                    <Sparkles className="w-8 h-8 text-slate-400" />
+                    <Code2 className="w-8 h-8 text-slate-400" />
                   </div>
                   <h3 className="text-sm font-bold text-slate-300">Starter Code Sandbox</h3>
                   <p className="text-xs max-w-sm text-center leading-relaxed text-slate-500 animate-pulse">

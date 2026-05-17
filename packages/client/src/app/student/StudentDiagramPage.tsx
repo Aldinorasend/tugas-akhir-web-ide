@@ -5,7 +5,7 @@ import ScaffoldingPanel from "@/components/ScaffoldingPanel";
 import { getRandomStudyCase, getStudyCaseById, compareCode } from "@/lib/api";
 import { useEffect, useRef, useState } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
-import { Shuffle, Lock, Unlock, Sparkles, Timer, HelpCircle } from "lucide-react";
+import { Shuffle, Code2, Unlock } from "lucide-react";
 import ProjectExplorer from "@/components/ProjectExplorer";
 import JavaEditor from "@/components/JavaEditor";
 import OutputPanel from "@/components/OutputPanel";
@@ -598,31 +598,16 @@ export default function StudentDiagramPage({ isNonScaffolding = false }: { isNon
                                     : "text-slate-600 cursor-not-allowed opacity-60"
                                 }`}
                         >
-                            {isIdeUnlocked ? (
-                                <Unlock className="w-3.5 h-3.5 text-green-500" />
-                            ) : (
-                                <Lock className="w-3.5 h-3.5 text-slate-600" />
-                            )}
                             <span>Java IDE Code Sandbox</span>
                             {!isIdeUnlocked && (
                                 <span className="absolute left-1/2 -bottom-10 -translate-x-1/2 bg-slate-950 text-[9px] text-slate-300 px-2 py-1 rounded border border-slate-800 pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity duration-150 whitespace-nowrap z-50 shadow-xl">
-                                    🔒 Match your UML Diagram first to unlock!
+                                    Match your UML Diagram first to unlock!
                                 </span>
                             )}
                         </button>
                     </div>
 
                     <div className="flex items-center gap-4">
-                        <div className="flex items-center gap-3 px-4 py-1.5 bg-blue-500/5 border border-blue-500/20 rounded-xl shadow-inner group transition-all hover:bg-blue-500/10">
-                            <div className="flex items-center gap-2">
-                                <Timer className="w-3.5 h-3.5 text-blue-500 animate-pulse" />
-                                <span className="text-[9px] font-black uppercase tracking-widest text-slate-500">Elapsed</span>
-                            </div>
-                            {/* <span className="text-sm font-mono font-bold text-white tabular-nums">
-                                {formatTime(timeElapsed)}
-                            </span> */}
-                        </div>
-
                         <button
                             onClick={() => setShowScaffolding(!showScaffolding)}
                             className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-[10px] font-bold uppercase tracking-widest transition-all ${showScaffolding
@@ -630,18 +615,15 @@ export default function StudentDiagramPage({ isNonScaffolding = false }: { isNon
                                 : "bg-slate-800 text-slate-400 border border-slate-700 hover:bg-slate-700"
                                 }`}
                         >
-                            <HelpCircle className="w-3 h-3 text-slate-400" />
                             <span>{isNonScaffolding ? (showScaffolding ? "Hide Help" : "Show Help") : (showScaffolding ? "Hide Scaffolding" : "Show Scaffolding")}</span>
                         </button>
 
                         {activeTab === "diagram" ? (
                             <div className="bg-blue-500/10 text-blue-400 border border-blue-500/10 px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-widest flex items-center gap-1.5 shadow-md">
-                                <div className="w-1.5 h-1.5 rounded-full bg-blue-500" />
                                 Analyzing UML Specifications
                             </div>
                         ) : (
                             <div className="bg-orange-500/10 text-orange-400 border border-orange-500/10 px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-widest flex items-center gap-1.5 shadow-md">
-                                <div className="w-1.5 h-1.5 rounded-full bg-orange-500" />
                                 Solving starter code errors
                             </div>
                         )}
@@ -685,7 +667,7 @@ export default function StudentDiagramPage({ isNonScaffolding = false }: { isNon
                                 ) : (
                                     <div className="flex-1 flex flex-col items-center justify-center text-slate-500 gap-3 bg-[#141414]">
                                         <div className="p-4 bg-white/5 rounded-full border border-white/10">
-                                            <Sparkles className="w-8 h-8 text-slate-400" />
+                                            <Code2 className="w-8 h-8 text-slate-400" />
                                         </div>
                                         <h3 className="text-sm font-bold text-slate-300">Java Starter Sandbox</h3>
                                         <p className="text-xs max-w-sm text-center leading-relaxed text-slate-500 animate-pulse">
