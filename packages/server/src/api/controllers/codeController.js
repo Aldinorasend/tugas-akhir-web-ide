@@ -5,7 +5,8 @@ import { evaluateCodeScaffolding } from "../../core/scaffolding/code-scaffolding
 // Handler Utama Endpoint HTTP POST /api/grader/compare-code
 export const gradeAndCompareCode = async (req, res) => {
     try {
-        const { user_id, exerciseId, current_code, codeMetrics, logic_rules } = req.body;
+        const { user_id, exerciseId, current_code, codeMetrics, logic_rules, experiment_group } = req.body;
+        const activeGroup = (experiment_group || req.body.experimentGroup || "CONTROL").toUpperCase();
 
         // 1. Validasi input parameter dasar dari request body
         if (!current_code || !logic_rules) {
@@ -77,7 +78,8 @@ export const gradeAndCompareCode = async (req, res) => {
                 run_velocity: parseFloat(runVelocity.toFixed(2)),
                 frustration_index: parseFloat(Math.min(decision.analytics.frustrationIndex, 1).toFixed(2)),
                 detected_category: decision.analytics.category, // Enum: 'TINKERERS', 'STOPPERS', 'MOVERS'
-                is_passed: decision.isPassed
+                is_passed: decision.isPassed,
+                experiment_group: activeGroup
             }, { onConflict: 'user_id, exercise_id' }) // Memanfaatkan Composite Key agar meng-update 1 baris yang sama
             .select("id")
             .single();
@@ -99,7 +101,8 @@ export const gradeAndCompareCode = async (req, res) => {
                 detected_category: decision.analytics.category,
                 scaffolding_level: decision.scaffolding.level, // 1, 2, atau 3
                 trigger_reason: decision.scaffolding.reason,
-                hint_message: decision.scaffolding.hint || "Periksa kembali aturan konseptual diagram pada kode Anda."
+                hint_message: decision.scaffolding.hint || "Periksa kembali aturan konseptual diagram pada kode Anda.",
+                experiment_group: activeGroup
             });
 
         if (logError) throw logError;

@@ -4,7 +4,8 @@ import { evaluateDiagramScaffolding } from "../../core/scaffolding/diagram-scaff
 
 export const gradeAndLogDiagram = async (req, res) => {
     try {
-        const { user_id, exerciseId, nodes, edges, diagramMetrics } = req.body;
+        const { user_id, exerciseId, nodes, edges, diagramMetrics, experiment_group } = req.body;
+        const activeGroup = (experiment_group || req.body.experimentGroup || "CONTROL").toUpperCase();
 
         // 1. Ambil ground truth rules dari dosen di database
         const { data: rules, error: ruleError } = await supabase
@@ -79,7 +80,8 @@ export const gradeAndLogDiagram = async (req, res) => {
                 submit_velocity: parseFloat(submitVelocity.toFixed(2)),
                 frustration_index: parseFloat(Math.min(decision.analytics.frustrationIndex, 1).toFixed(2)),
                 detected_category: decision.analytics.category?.toUpperCase() || 'TINKERERS',
-                is_passed: gradeResult.isPassed
+                is_passed: gradeResult.isPassed,
+                experiment_group: activeGroup
             }, { onConflict: 'user_id, exercise_id' });
 
         if (updateError) throw updateError;
@@ -96,7 +98,8 @@ export const gradeAndLogDiagram = async (req, res) => {
                 detected_category: decision.analytics.category?.toUpperCase() || 'TINKERERS',
                 scaffolding_level: decision.scaffolding.level, 
                 trigger_reason: decision.scaffolding.reason,
-                hint_message: gradeResult.feedbacks[0] || "Periksa kembali rancangan diagram Anda."
+                hint_message: gradeResult.feedbacks[0] || "Periksa kembali rancangan diagram Anda.",
+                experiment_group: activeGroup
             });
 
         if (logError) throw logError;

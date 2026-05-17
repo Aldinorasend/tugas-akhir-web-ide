@@ -15,7 +15,7 @@ interface DiagramNode {
   };
 }
 
-export default function ScaffoldingPanel({ stage, activeTab, answerKey, diagramRef, feedbacks = [], onClose }: any) {
+export default function ScaffoldingPanel({ stage, activeTab, answerKey, diagramRef, feedbacks = [], onClose, isNonScaffolding = false }: any) {
   const [currentNodes, setCurrentNodes] = useState<DiagramNode[]>([]);
 
   useEffect(() => {
@@ -27,6 +27,87 @@ export default function ScaffoldingPanel({ stage, activeTab, answerKey, diagramR
     }, 1000);
     return () => clearInterval(interval);
   }, [diagramRef]);
+
+  if (isNonScaffolding) {
+    return (
+      <div className="w-80 h-full border-l border-slate-800 bg-[#0f172a] flex flex-col shadow-2xl">
+        {/* Header with Close Button */}
+        <div className="p-6 border-b border-slate-800 flex justify-between items-center bg-slate-900/50">
+          <div className="flex items-center gap-2">
+            <Info className="w-4 h-4 text-slate-400" />
+            <h2 className="text-[10px] font-black text-slate-300 uppercase tracking-widest">Help Panel</h2>
+          </div>
+          <button
+            onClick={onClose}
+            className="p-2 hover:bg-slate-800 rounded-lg text-slate-500 hover:text-slate-300 transition-colors"
+          >
+            <X className="w-4 h-4" />
+          </button>
+        </div>
+
+        <div className="flex-1 overflow-y-auto p-6 space-y-6">
+          {activeTab === "diagram" ? (
+            <div className="space-y-6">
+              {/* Generic UML Help */}
+              <section className="bg-slate-900 p-5 rounded-2xl border border-slate-800 shadow-lg space-y-4">
+                <h3 className="text-xs font-bold text-slate-200 uppercase tracking-wider flex items-center gap-2">
+                  <HelpCircle className="w-4 h-4 text-blue-400" /> Panduan Umum Diagram
+                </h3>
+                <ul className="text-xs text-slate-400 space-y-2.5 list-disc list-inside leading-relaxed font-normal">
+                  <li>Klik tombol <strong className="text-slate-300">"Add Class"</strong> untuk membuat kotak kelas baru.</li>
+                  <li>Klik dua kali pada nama kelas, nama atribut, atau nama method untuk mengeditnya secara langsung.</li>
+                  <li>Tarik garis dari port/titik lingkaran satu kelas ke kelas lainnya untuk menghubungkan relasi.</li>
+                  <li>Tentukan tipe kelas (Class biasa, Abstract Class, atau Interface) di bagian bawah kotak kelas.</li>
+                  <li>Klik tombol <strong className="text-slate-300">"Check Diagram"</strong> di pojok kanan atas untuk mengecek kebenaran.</li>
+                </ul>
+              </section>
+
+              {/* Clueless Support */}
+              <section className="bg-slate-900 p-5 rounded-2xl border border-rose-500/10 shadow-lg space-y-3">
+                <h3 className="text-xs font-bold text-rose-300 uppercase tracking-wider flex items-center gap-2">
+                  <Milestone className="w-4 h-4 text-rose-400" /> Bantuan Pemecahan Masalah
+                </h3>
+                <p className="text-xs text-slate-400 leading-relaxed font-normal">
+                  Jika Anda merasa bingung atau menemui jalan buntu dalam merancang diagram kelas, harap membaca kembali deskripsi studi kasus yang diberikan dengan saksama.
+                </p>
+                <p className="text-xs text-slate-400 leading-relaxed font-normal">
+                  Rancanglah kelas-kelas beserta atribut dan metodenya secara bertahap sesuai informasi yang tertulis di dalam teks studi kasus.
+                </p>
+              </section>
+            </div>
+          ) : (
+            <div className="space-y-6">
+              {/* Generic Java Coding Help */}
+              <section className="bg-slate-900 p-5 rounded-2xl border border-slate-800 shadow-lg space-y-4">
+                <h3 className="text-xs font-bold text-slate-200 uppercase tracking-wider flex items-center gap-2">
+                  <Terminal className="w-4 h-4 text-emerald-400" /> Panduan Pemrograman Java
+                </h3>
+                <ul className="text-xs text-slate-400 space-y-2.5 list-disc list-inside leading-relaxed font-normal">
+                  <li>Gunakan panel penjelajah berkas di sisi kiri untuk membuka dan mengedit berkas Java yang diperlukan.</li>
+                  <li>Tulis kode program Java yang valid dan sesuai dengan rancangan kelas yang telah Anda buat di tab diagram.</li>
+                  <li>Klik tombol <strong className="text-slate-300">"Run Code"</strong> untuk mengompilasi dan mengeksekusi program Anda.</li>
+                  <li>Periksa hasil keluaran program atau pesan kesalahan (*error compiler*) pada panel output di bagian bawah.</li>
+                </ul>
+              </section>
+
+              {/* Clueless Support */}
+              <section className="bg-slate-900 p-5 rounded-2xl border border-rose-500/10 shadow-lg space-y-3">
+                <h3 className="text-xs font-bold text-rose-300 uppercase tracking-wider flex items-center gap-2">
+                  <Milestone className="w-4 h-4 text-rose-400" /> Bantuan Pemecahan Masalah
+                </h3>
+                <p className="text-xs text-slate-400 leading-relaxed font-normal">
+                  Apabila program Anda mengalami kegagalan kompilasi atau hasil keluaran belum sesuai, periksalah pesan error yang tertera pada panel output di bawah editor.
+                </p>
+                <p className="text-xs text-slate-400 leading-relaxed font-normal">
+                  Pastikan struktur deklarasi kelas, nama berkas, tipe data, serta kata kunci pewarisan (*extends* / *implements*) telah ditulis dengan benar.
+                </p>
+              </section>
+            </div>
+          )}
+        </div>
+      </div>
+    );
+  }
 
   const getRandomEncouragement = () => {
     const quotes = [

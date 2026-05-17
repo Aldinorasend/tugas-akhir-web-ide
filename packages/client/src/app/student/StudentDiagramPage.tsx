@@ -14,7 +14,7 @@ import { graderDiagram, } from "@/lib/api";
 import { useWorkspace } from "@/hooks/useWorkspace";
 import { randomUUID } from "crypto";
 
-export default function StudentDiagramPage() {
+export default function StudentDiagramPage({ isNonScaffolding = false }: { isNonScaffolding?: boolean }) {
     const [gradeResult, setGradeResult] = useState<{
         score: number,
         feedbacks: string[],
@@ -359,7 +359,8 @@ export default function StudentDiagramPage() {
                 studyCase.answer_key.exercise_id,
                 snapshotUML.nodes,
                 snapshotUML.edges,
-                updatedMetricsForBackend
+                updatedMetricsForBackend,
+                isNonScaffolding ? "CONTROL" : "EXPERIMENTAL"
             );
 
             console.log("Grader result:", result);
@@ -429,7 +430,8 @@ export default function StudentDiagramPage() {
                 studyCase.id || studyCase.answer_key.exercise_id,
                 allFiles,
                 updatedMetrics,
-                studyCase.answer_key.logic_rules
+                studyCase.answer_key.logic_rules,
+                isNonScaffolding ? "CONTROL" : "EXPERIMENTAL"
             );
             console.log("Result:", result);
 
@@ -610,7 +612,7 @@ export default function StudentDiagramPage() {
                                 }`}
                         >
                             <HelpCircle className="w-3 h-3 text-slate-400" />
-                            <span>{showScaffolding ? "Hide Scaffolding" : "Show Scaffolding"}</span>
+                            <span>{isNonScaffolding ? (showScaffolding ? "Hide Help" : "Show Help") : (showScaffolding ? "Hide Scaffolding" : "Show Scaffolding")}</span>
                         </button>
 
                         {activeTab === "diagram" ? (
@@ -686,6 +688,7 @@ export default function StudentDiagramPage() {
                     diagramRef={diagramRef}
                     feedbacks={gradeResult?.feedbacks || []}
                     onClose={() => setShowScaffolding(false)}
+                    isNonScaffolding={isNonScaffolding}
                 />
             )}
 
