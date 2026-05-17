@@ -32,77 +32,76 @@ export const gradeAndLogDiagram = async (req, res) => {
         // 4. Hitung kategori mahasiswa (Movers/Tinkerers/Stoppers) & Level Scaffolding (L1-L3)
         const decision = evaluateDiagramScaffolding(mappedResultsForEngine, diagramMetrics);
 
-        // 5. Cek atau Buat Sesi Utama di student_attempts
-        let { data: attempt } = await supabase
-            .from("student_attempts")
-            .select("id, diagram_check_count, logs")
-            .eq("user_id", user_id)
-            .eq("exercise_id", exerciseId)
-            .maybeSingle(); // Cari yang sudah ada
+        // Ekstraksi metrik temporal dan spasial dari payload FE
+        const { temporal, spatial_churn, evaluation } = diagramMetrics || {};
+        const timeSpent = temporal?.time_spent_ms || 0;
+        const idleTime = temporal?.idle_time_ms || 0;
+        const maxSingleIdle = temporal?.max_single_idle_ms || 0;
 
-        if (!attempt) {
-            const { data: newAttempt, error: createError } = await supabase
-                .from("student_attempts")
-                .insert({
-                    user_id: user_id,
-                    exercise_id: exerciseId,
-                    started_at: new Date()
-                })
-                .select()
-                .single();
+        const totalActions = spatial_churn?.total_actions || 0;
+        const nodeAddCount = spatial_churn?.node_add_count || 0;
+        const nodeDeleteCount = spatial_churn?.node_delete_count || 0;
+        const edgeAddCount = spatial_churn?.edge_add_count || 0;
+        const edgeDeleteCount = spatial_churn?.edge_delete_count || 0;
+        const componentModificationCount = spatial_churn?.component_modification_count || 0;
 
-            if (createError) throw createError;
-            attempt = newAttempt;
-        }
+        const submitCount = evaluation?.submit_count || 1;
+        const mismatchAttempts = evaluation?.mismatch_attempts || 0;
 
-        const currentCheckCount = (attempt?.diagram_check_count || 0) + 1;
-        const existingLogs = attempt?.logs || [];
+        // Hitung rasio untuk disimpan ke database
+        const totalDeletes = nodeDeleteCount + edgeDeleteCount;
+        const churnRatio = totalActions > 0 ? totalDeletes / totalActions : 0;
+        const hesitationRatio = timeSpent > 0 ? idleTime / timeSpent : 0;
+        const timeSpentMinutes = timeSpent / 60000;
+        const submitVelocity = timeSpentMinutes > 0 ? submitCount / timeSpentMinutes : 0;
 
-        // Buat objek snapshot singkat untuk merekam performa di kolom array logs
-        const newSnapshotLog = {
-            check_number: currentCheckCount,
-            timestamp: new Date().toISOString(),
-            category: decision.analytics.category,
-            score: gradeResult.finalGrade,
-            error_ratio: decision.analytics.errorRatio
-        };
-
-        // 6. UPDATE Tabel Kunci: student_attempts (Data Kumulatif Terkini)
+        // =================================================================
+        // 5. ATOMIC UPSERT: Simpan Metrik Kumulatif ke diagram_phase_metrics
+        // =================================================================
         const { error: updateError } = await supabase
-            .from("student_attempts")
-            .update({
-                current_diagram: { nodes, edges },
-                diagram_check_count: currentCheckCount,
-                diagram_highest_scaffold: decision.scaffolding.level,
-                is_completed: gradeResult.isPassed,
-                logs: [...existingLogs, newSnapshotLog],
-                // Jika lulus 100% MATCH, otomatis catat waktu penyelesaian
-                ...(gradeResult.isPassed && {
-                    completed_at: new Date().toISOString(),
-                    finish_in_second: Math.round((diagramMetrics?.temporal?.time_spent_ms || 0) / 1000)
-                })
-            })
-            .eq("id", attempt.id);
+            .from("diagram_phase_metrics")
+            .upsert({
+                user_id: user_id,
+                exercise_id: exerciseId,
+                time_spent_ms: timeSpent,
+                idle_time_ms: idleTime,
+                max_single_idle_ms: maxSingleIdle,
+                total_actions: totalActions,
+                node_add_count: nodeAddCount,
+                node_delete_count: nodeDeleteCount,
+                edge_add_count: edgeAddCount,
+                edge_delete_count: edgeDeleteCount,
+                component_modification_count: componentModificationCount,
+                submit_count: submitCount,
+                mismatch_attempts: mismatchAttempts,
+                hesitation_ratio: parseFloat(hesitationRatio.toFixed(2)),
+                churn_ratio: parseFloat(churnRatio.toFixed(2)),
+                submit_velocity: parseFloat(submitVelocity.toFixed(2)),
+                frustration_index: parseFloat(Math.min(decision.analytics.frustrationIndex, 1).toFixed(2)),
+                detected_category: decision.analytics.category?.toUpperCase() || 'TINKERERS',
+                is_passed: gradeResult.isPassed
+            }, { onConflict: 'user_id, exercise_id' });
 
         if (updateError) throw updateError;
 
-        // 7. INSERT Tabel History: scaffolding_logs (Menjaga keutuhan data longitudinal)
+        // =================================================================
+        // 6. INSERT Tabel History: scaffolding_logs
+        // =================================================================
         const { error: logError } = await supabase
             .from("scaffolding_logs")
             .insert({
-                attempt_id: attempt.id,
-                level: decision.scaffolding.level,
-                concept_node: gradeResult.feedbacks[0] || "UML_Structure_Verification", // Highlight kesalahan pertama sebagai penanda node masalah
-                trigger_type: gradeResult.isPassed ? "Diagram_Passed" : "Diagram_Mismatch",
-                student_category: decision.analytics.category,
-                frustration_index: decision.analytics.frustrationIndex,
-                error_ratio: decision.analytics.errorRatio,
-                trigger_reason: decision.scaffolding.reason
+                user_id: user_id,
+                exercise_id: exerciseId,
+                trigger_phase: 'DIAGRAM_PLANNING', // Menandai fase perancangan diagram UML
+                detected_category: decision.analytics.category?.toUpperCase() || 'TINKERERS',
+                scaffolding_level: decision.scaffolding.level, 
+                trigger_reason: decision.scaffolding.reason,
+                hint_message: gradeResult.feedbacks[0] || "Periksa kembali rancangan diagram Anda."
             });
 
         if (logError) throw logError;
 
-        // 8. Berikan respons adaptif ke Frontend Next.js (Adaptive Feedback UI)
+        // 7. Berikan respons adaptif ke Frontend Next.js (Adaptive Feedback UI)
         return res.json({
             success: true,
             isPassed: gradeResult.isPassed,

@@ -315,6 +315,16 @@ export default function StudentDiagramPage() {
     const triggerStage1Injection = () => {
         if (!diagramRef.current || !studyCase?.answer_key) return;
 
+        const snapshot = diagramRef.current.getSnapshot();
+        const currentNodes = snapshot?.nodes || [];
+        const currentEdges = snapshot?.edges || [];
+
+        // Hanya boleh melakukan injeksi/reset kerangka jika diagram masih sepenuhnya kosong
+        if (currentNodes.length > 0 || currentEdges.length > 0) {
+            console.log("Diagram sudah berisi komponen (nodes/edges). Reset kanvas dan injeksi kerangka otomatis L1 dilewati.");
+            return;
+        }
+
         const skeletonNodes = studyCase.answer_key.nodes.map((node: any) => ({
             ...node,
             data: { ...node.data, attributes: [], methods: [] }
