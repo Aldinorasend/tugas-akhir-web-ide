@@ -100,14 +100,21 @@ interface JavaFile {
     path: string;
     content: string;
 }
-export const graderCode = async (current_code: JavaFile[], logic_rules: string[]) => {
-    const response = await fetch(`${API_URL}/projects/compare-code`, {
+
+
+export const compareCode = async (
+    user_id: string,
+    exerciseId: string,
+    current_code: JavaFile[],
+    codeMetrics: any,
+    logic_rules: string[]
+) => {
+    const response = await fetch(`${API_URL}/grader/compare-code`, {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
         },
-        // Pastikan nama properti di sini sama dengan di server
-        body: JSON.stringify({ current_code, logic_rules }),
+        body: JSON.stringify({ user_id, exerciseId, current_code, codeMetrics, logic_rules }),
     });
 
     if (!response.ok) {

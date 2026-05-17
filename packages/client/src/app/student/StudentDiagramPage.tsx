@@ -2,7 +2,7 @@
 
 import DiagramCanvas from "@/components/diagram/DiagramCanvas";
 import ScaffoldingPanel from "@/components/ScaffoldingPanel";
-import { getRandomStudyCase, getStudyCaseById, graderCode } from "@/lib/api";
+import { getRandomStudyCase, getStudyCaseById, compareCode } from "@/lib/api";
 import { useEffect, useRef, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { Shuffle, Lock, Unlock, Sparkles, Timer } from "lucide-react";
@@ -36,6 +36,36 @@ export default function StudentDiagramPage() {
     const [isIdeUnlocked, setIsIdeUnlocked] = useState(true);
     const [showScaffolding, setShowScaffolding] = useState(false);
 
+    // Coding Phase Analytics Metrics state
+    const [codeMetrics, setCodeMetrics] = useState({
+        temporal: {
+            time_spent_ms: 0,
+            idle_time_ms: 0,
+            max_single_idle_ms: 0,
+        },
+        spatial_textual: {
+            keystroke_count: 0,
+            lines_of_code: 0,
+        },
+        spatial_churn: {
+            total_actions: 0,
+            add_count: 0,
+            delete_count: 0,
+        },
+        evaluation: {
+            submit_count: 0,
+            mismatch_attempts: 0,
+            run_count: 0,
+        }
+    });
+
+    const lastCodeLengthRef = useRef<number>(0);
+    const lastCodeActivityRef = useRef<number>(Date.now());
+    const codeCurrentIdleRef = useRef<number>(0);
+    const codeMaxIdleRef = useRef<number>(0);
+    const codeAccumulatedIdleRef = useRef<number>(0);
+    const codeStartTimeRef = useRef<number>(Date.now());
+
     const diagramRef = useRef<any>(null); // Ref to the canvas
     const searchParams = useSearchParams();
 
@@ -56,77 +86,114 @@ export default function StudentDiagramPage() {
     } = useWorkspace();
     const { output, isRunning, runJavaCode } = useSocket();
     const handleRun = async () => {
-        // const allFiles = flattenFiles(nodes).filter(file => file.path.endsWith('.java'));
-
-        // if (allFiles.length === 0) return alert("Tidak ada kode Java!");
-
-        // try {
-        //     // Kirim allFiles sebagai array, bukan string gabungan
-        //     const result = await graderCode(allFiles, studyCase.answer_key.logic_rules);
-
-        //     if (result.success) {
-        //         const summary = result.results
-        //             .map((r: any) => `${r.status}: ${r.rule}`)
-        //             .join('\n');
-        //         alert(`Hasil Analisis:\n\n${summary}`);
-        //     }
-        // } catch (error: any) {
-        //     console.error("Test Matcher Error:", error);
-        // }
-
-        // const exerciseId = studyCase.id;
-        // // nodes
-        // // // Jika rule belum ada, otomatis lolos
-        // // if (nodeClassRules.length === 0) {
-        // //     // Alert sementara
-        // //     alert("Belum ada rule untuk class ini, otomatis lolos.");
-        // //     return;
-        // // }
-
-        // try {
-        //     const result = await graderDiagram(id, exerciseId, nodes, edges, diagramMetrics);
-
-        //     if (!result.isCorrect) {
-        //         // Reset status IDE agar kembali mengunci
-        //         setIsIdeUnlocked(false);
-        //     }
-
-        //     setGradeResult({
-        //         score: result.score / 100,
-        //         feedbacks: result.hints || [],
-        //         isPassed: result.isCorrect
-        //     });
-
-        //     if (result.isCorrect) {
-        //         // Buka kuncinya setelah lolos
-        //         setIsIdeUnlocked(true);
-        //     }
-        // } catch (error) {
-        //     console.error("Error grading diagram:", error);
-        // }
+        runJavaCode(nodes, selectedId, flattenFiles);
+        logCodeActivity();
+        setCodeMetrics((prev) => ({
+            ...prev,
+            evaluation: {
+                ...prev.evaluation,
+                run_count: (prev.evaluation?.run_count || 0) + 1
+            }
+        }));
     };
 
-    // // Timer Effect
-    // useEffect(() => {
-    //     let interval: NodeJS.Timeout;
-    //     if (isTimerRunning && !gradeResult?.isPassed) {
-    //         interval = setInterval(() => {
-    //             setTimeElapsed(prev => prev + 1);
-    //         }, 1000);
-    //     }
-    //     return () => clearInterval(interval);
-    // }, [isTimerRunning, gradeResult?.isPassed]);
+    // Initialize or reset coding start time when coding tab becomes active
+    useEffect(() => {
+        if (activeTab === "code") {
+            codeStartTimeRef.current = Date.now();
+            lastCodeActivityRef.current = Date.now();
+            codeCurrentIdleRef.current = 0;
+            codeMaxIdleRef.current = 0;
+            codeAccumulatedIdleRef.current = 0;
+        }
+    }, [activeTab]);
 
-    // const formatTime = (seconds: number) => {
-    //     const h = Math.floor(seconds / 3600);
-    //     const m = Math.floor((seconds % 3600) / 60);
-    //     const s = seconds % 60;
-    //     return [
-    //         h > 0 ? h : null,
-    //         m.toString().padStart(2, '0'),
-    //         s.toString().padStart(2, '0')
-    //     ].filter(Boolean).join(':');
-    // };
+    // Timer for coding phase analytics
+    useEffect(() => {
+        const timer = setInterval(() => {
+            if (activeTab !== "code") return;
+            const now = Date.now();
+            const totalTimeSpent = now - codeStartTimeRef.current;
+            const timeSinceLastActivity = now - lastCodeActivityRef.current;
+
+            if (timeSinceLastActivity >= 5000) {
+                codeCurrentIdleRef.current = timeSinceLastActivity;
+                if (codeCurrentIdleRef.current > codeMaxIdleRef.current) {
+                    codeMaxIdleRef.current = codeCurrentIdleRef.current;
+                }
+            }
+
+            setCodeMetrics((prev) => ({
+                ...prev,
+                temporal: {
+                    time_spent_ms: totalTimeSpent,
+                    idle_time_ms: codeAccumulatedIdleRef.current + codeCurrentIdleRef.current,
+                    max_single_idle_ms: codeMaxIdleRef.current,
+                }
+            }));
+        }, 1000);
+
+        return () => clearInterval(timer);
+    }, [activeTab]);
+
+    useEffect(() => {
+        if (currentFile) {
+            lastCodeLengthRef.current = currentFile.content?.length || 0;
+        }
+    }, [selectedId, currentFile]);
+
+    const logCodeActivity = () => {
+        if (codeCurrentIdleRef.current > 0) {
+            codeAccumulatedIdleRef.current += codeCurrentIdleRef.current;
+            codeCurrentIdleRef.current = 0;
+        }
+        lastCodeActivityRef.current = Date.now();
+    };
+
+    const trackCodeAction = (actionType: "add_count" | "delete_count") => {
+        logCodeActivity();
+        setCodeMetrics((prev) => {
+            const updatedChurn = { ...prev.spatial_churn };
+            updatedChurn.total_actions += 1;
+            if (actionType === "add_count") {
+                updatedChurn.add_count += 1;
+            } else if (actionType === "delete_count") {
+                updatedChurn.delete_count += 1;
+            }
+
+            // Calculate dynamic total lines of code across all active Java files
+            const allFiles = flattenFiles(nodes).filter(file => file.path.endsWith('.java'));
+            const totalLines = allFiles.reduce((acc, file) => {
+                return acc + (file.content ? file.content.split('\n').length : 0);
+            }, 0);
+
+            return {
+                ...prev,
+                spatial_churn: updatedChurn,
+                spatial_textual: {
+                    keystroke_count: (prev.spatial_textual?.keystroke_count || 0) + 1,
+                    lines_of_code: totalLines
+                }
+            };
+        });
+    };
+
+    const handleCodeChangeWithMetrics = (newCode: string | undefined) => {
+        handleCodeChange(newCode);
+        if (newCode === undefined) return;
+
+        const oldLength = lastCodeLengthRef.current;
+        const newLength = newCode.length;
+
+        if (newLength > oldLength) {
+            trackCodeAction("add_count");
+        } else if (newLength < oldLength) {
+            trackCodeAction("delete_count");
+        }
+
+        lastCodeLengthRef.current = newLength;
+    };
+
 
     // Helper to extract and set the IDE starter files
     const setIDEStarterFiles = (actualData: any) => {
@@ -218,7 +285,6 @@ export default function StudentDiagramPage() {
                 setStudyCase(actualData);
 
                 // Reset canvas, scoring, active tabs & IDE states
-                // setGradeResult(null);
                 setStage(3);
                 setActiveTab("diagram");
                 setIsIdeUnlocked(false);
@@ -257,7 +323,7 @@ export default function StudentDiagramPage() {
         diagramRef.current.setNodes(skeletonNodes);
     };
 
-    const handleSubmit = async () => {
+    const handleSubmitDiagram = async () => {
         if (!diagramRef.current) return;
 
         // 1. Ambil snapshot metrik dan struktur UML dari ref canvas
@@ -330,6 +396,74 @@ export default function StudentDiagramPage() {
         }
     };
 
+    const handleSubmitCode = async () => {
+        const allFiles = flattenFiles(nodes).filter(file => file.path.endsWith('.java'));
+
+        if (allFiles.length === 0) return alert("Tidak ada kode Java!");
+
+        // Force increment submit_count
+        const updatedMetrics = {
+            ...codeMetrics,
+            evaluation: {
+                ...codeMetrics.evaluation,
+                submit_count: (codeMetrics.evaluation?.submit_count || 0) + 1,
+                mismatch_attempts: codeMetrics.evaluation?.mismatch_attempts || 0
+            }
+        };
+
+
+        setIsSubmitting(true);
+        try {
+            const result = await compareCode(
+                "90289652-6cf9-41a2-a106-ec1783c5146e",
+                studyCase.id || studyCase.answer_key.exercise_id,
+                allFiles,
+                updatedMetrics,
+                studyCase.answer_key.logic_rules
+            );
+            console.log("Result:", result);
+
+            if (result && result.success) {
+                // Update internal metrics matching
+                setCodeMetrics(prev => ({
+                    ...prev,
+
+                }));
+
+                // Reset timeout trapping for Stoppers
+                if (result.scaffolding?.shouldResetIdle) {
+                    codeAccumulatedIdleRef.current = 0;
+                    codeCurrentIdleRef.current = 0;
+                    codeMaxIdleRef.current = 0;
+                    lastCodeActivityRef.current = Date.now();
+                }
+
+                setGradeResult({
+                    score: result.score,
+                    feedbacks: result.hints || [],
+                    reason: result.scaffolding?.reason || "",
+                    isPassed: result.isPassed,
+                    studentCategory: result.analytics?.category || "",
+                });
+
+                if (result.isPassed) {
+                    alert("Selamat! Kode Java Anda berhasil 100% lolos verifikasi logika kelas!");
+                } else {
+                    console.log(`Mahasiswa diarahkan ke Scaffolding Level Koding: ${result.scaffolding?.level}`);
+                    if (result.scaffolding?.level) {
+                        setStage(result.scaffolding.level as 1 | 2 | 3);
+                        setShowScaffolding(true);
+                    }
+                }
+            }
+        } catch (error: any) {
+            console.error("Test Matcher Error:", error);
+            alert("Gagal mengirim kode Java. Coba lagi.");
+        } finally {
+            setIsSubmitting(false);
+        }
+    }
+
 
 
 
@@ -380,11 +514,11 @@ export default function StudentDiagramPage() {
                 />
 
                 {activeTab === "diagram" ? (
-                    <button onClick={handleSubmit} disabled={isSubmitting} className="w-full py-3 bg-green-600 rounded-xl font-bold">
+                    <button onClick={handleSubmitDiagram} disabled={isSubmitting} className="w-full py-3 bg-green-600 rounded-xl font-bold">
                         {isSubmitting ? "Grading..." : "Submit Diagram"}
                     </button>
                 ) : (
-                    <button onClick={() => alert("IDE submission and scaffolding are not yet implemented.")} className="w-full py-3 bg-green-600 rounded-xl font-bold">
+                    <button onClick={handleSubmitCode} disabled={isSubmitting} className="w-full py-3 bg-green-600 rounded-xl font-bold">
                         Submit Code
                     </button>
                 )}
@@ -510,7 +644,7 @@ export default function StudentDiagramPage() {
                                         <JavaEditor
                                             code={currentFile.content || ""}
                                             fileName={currentFile.name}
-                                            onCodeChange={handleCodeChange}
+                                            onCodeChange={handleCodeChangeWithMetrics}
                                             onRun={handleRun}
                                         />
                                         <OutputPanel

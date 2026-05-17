@@ -453,12 +453,6 @@ const validateRule = (
   }
 };
 
-/**
- * =================================
- * MAIN FUNCTION
- * =================================
- */
-
 export const compareCodeWithLogic = (
   fileArray,
   logicRulesRaw
@@ -502,6 +496,8 @@ export const compareCodeWithLogic = (
      * ANALYZE FILES
      */
     let allClassesInfo = [];
+    let hasSyntaxError = false;
+    let syntaxErrorMessage = "";
 
     fileArray.forEach((file) => {
       if (
@@ -510,61 +506,58 @@ export const compareCodeWithLogic = (
         return;
       }
 
-      const extracted =
-        analyzeJavaFile(
-          file.content
-        );
+      try {
+        // Try parsing to identify any syntax errors in the Java code
+        parse(file.content);
 
-      allClassesInfo = [
-        ...allClassesInfo,
-        ...extracted,
-      ];
+        const extracted = analyzeJavaFile(file.content);
+        allClassesInfo = [
+          ...allClassesInfo,
+          ...extracted,
+        ];
+      } catch (err) {
+        hasSyntaxError = true;
+        syntaxErrorMessage = err.message;
+        console.error("Java Parse Error in analyzer:", err.message);
+      }
     });
-
-    console.log(
-      "ALL CLASSES:",
-      JSON.stringify(
-        allClassesInfo,
-        null,
-        2
-      )
-    );
 
     /**
      * VALIDATE RULES
      */
-    const results =
-      logicRules.map(
-        (rule) => {
-          try {
-            const parsedRule =
-              parseRuleString(
-                rule
-              );
+    const results = logicRules.map((rule) => {
+        try {
+            const parsedRule = parseRuleString(rule);
+            const isMatch = validateRule(parsedRule, allClassesInfo);
 
-            const isMatch =
-              validateRule(
-                parsedRule,
-                allClassesInfo
-              );
-
+            if (isMatch) {
+                return {
+                    rule,
+                    status: "MATCH",
+                    type: "SUCCESS",
+                    message: `Aturan ${rule} terpenuhi.`
+                };
+            } else {
+                // Jika tidak cocok dengan rancangan diagram/UML, kategorikan sebagai SYNTAX_ERROR atau LOGICAL_ERROR
+                return {
+                    rule,
+                    status: "MISMATCH",
+                    type: hasSyntaxError ? "SYNTAX_ERROR" : "LOGICAL_ERROR", // Sinkron dengan backend server!
+                    message: hasSyntaxError
+                        ? `Gagal melakukan parsing kode karena adanya error sintaksis pada Java: ${syntaxErrorMessage}`
+                        : `Struktur kode gagal memenuhi aturan: ${rule}`
+                };
+            }
+        } catch (err) {
+            // Jika parser aturan gagal membaca format aturan
             return {
-              rule,
-              status:
-                isMatch
-                  ? "MATCH"
-                  : "MISMATCH",
+                rule,
+                status: "MISMATCH",
+                type: "SYNTAX_ERROR", // Sinkron dengan backend server!
+                message: `Gagal melakukan parsing kode pada aturan [${rule}]: ${err.message}`
             };
-          } catch (err) {
-            return {
-              rule,
-              status: "ERROR",
-              message:
-                err.message,
-            };
-          }
         }
-      );
+    });
 
     return {
       success: true,

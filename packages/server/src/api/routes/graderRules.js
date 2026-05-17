@@ -31,10 +31,11 @@
 // export default router;
 
 import express from "express";
-import { gradeAndLogDiagram } from "../controllers/diagramController.js"; // sesuaikan path
-
+import { gradeAndLogDiagram } from "../controllers/diagramController.js";
+import { gradeAndCompareCode } from "../controllers/codeController.js";
 const router = express.Router();
 
 router.post('/grade-diagram', gradeAndLogDiagram);
+router.post('/compare-code', gradeAndCompareCode);
 
 export default router;

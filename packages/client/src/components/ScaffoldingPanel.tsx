@@ -286,29 +286,219 @@ export default function ScaffoldingPanel({ stage, activeTab, answerKey, diagramR
             )}
           </div>
         ) : (
-          <div className="space-y-6 animate-in fade-in slide-in-from-right-4">
-            <div className="flex items-center gap-2 text-orange-400">
-              <Code className="w-4 h-4" />
-              <h2 className="text-[10px] font-black uppercase tracking-widest">Coding Phase Support</h2>
-            </div>
+          <div className="space-y-6">
+            {stage === 3 && (
+              <div className="space-y-4 animate-in fade-in slide-in-from-right-4 duration-300">
+                <h2 className="text-[10px] font-black text-rose-400 uppercase tracking-widest flex items-center gap-2">
+                  <Heart className="w-3.5 h-3.5 text-rose-500 animate-pulse" /> Stage 3: Affective Support (Coding)
+                </h2>
 
-            <div className="space-y-4">
-              <div className="bg-orange-500/5 p-4 rounded-xl border border-orange-500/20">
-                <h3 className="text-[10px] font-bold text-orange-300 mb-2 uppercase tracking-tighter">Implementation Hint:</h3>
-                <p className="text-[13px] text-slate-400 leading-relaxed">
-                  "Ensure your Java class names and package structure exactly match your UML design. Remember to handle inheritance using the <code>extends</code> keyword."
-                </p>
-              </div>
+                {/* Encouragement Card */}
+                <div className="relative overflow-hidden bg-gradient-to-br from-rose-500/10 to-orange-500/5 p-5 rounded-2xl border border-rose-500/20 shadow-lg">
+                  <div className="absolute -right-4 -bottom-4 w-16 h-16 bg-rose-500/10 rounded-full blur-xl" />
+                  <p className="text-[13px] text-rose-200 font-medium italic leading-relaxed mb-3">
+                    "{getRandomEncouragement()}"
+                  </p>
+                  <p className="text-[11px] text-slate-400 leading-relaxed">
+                    Menghadapi error kompilasi atau ketidaksesuaian logika adalah hal yang biasa dalam dunia pemrograman. Jangan berkecil hati, mari kita bedah perlahan!
+                  </p>
+                </div>
 
-              <div className="bg-slate-800/40 p-4 rounded-xl border border-slate-700/50">
-                <h3 className="text-[10px] font-bold text-slate-300 mb-2 uppercase tracking-tighter">Debug Checklist:</h3>
-                <ul className="text-[12px] text-slate-500 space-y-2">
-                  <li className="flex gap-2"><span>1.</span> <span>Check for missing semicolons.</span></li>
-                  <li className="flex gap-2"><span>2.</span> <span>Verify public/private access modifiers.</span></li>
-                  <li className="flex gap-2"><span>3.</span> <span>Ensure Main method is correctly defined.</span></li>
-                </ul>
+                {/* Grounding Strategy */}
+                <div className="bg-slate-800/40 p-4 rounded-xl border border-slate-700/50 space-y-3">
+                  <h3 className="text-[10px] font-bold text-slate-300 uppercase tracking-tighter opacity-70 flex items-center gap-1.5">
+                    <Milestone className="w-3 h-3 text-orange-400" /> Strategi Perbaikan Kode:
+                  </h3>
+                  <ul className="text-xs text-slate-400 space-y-2.5 leading-relaxed">
+                    <li className="flex gap-2">
+                      <span className="text-orange-500">1.</span>
+                      <span><strong>Baca Error Log:</strong> Lihat panel output di bawah editor. Baris error biasanya menunjukkan letak sintaks yang salah.</span>
+                    </li>
+                    <li className="flex gap-2">
+                      <span className="text-orange-500">2.</span>
+                      <span><strong>Periksa Blueprint Diagram:</strong> Buka kembali tab UML Diagram untuk memastikan kelas, atribut, dan relasi Anda sudah sama persis.</span>
+                    </li>
+                    <li className="flex gap-2">
+                      <span className="text-orange-500">3.</span>
+                      <span><strong>Uji Bertahap:</strong> Mulailah dengan memperbaiki deklarasi kelas dan method kosong terlebih dahulu sebelum menulis isi algoritma logikanya.</span>
+                    </li>
+                  </ul>
+                </div>
               </div>
-            </div>
+            )}
+
+            {stage === 2 && (
+              <div className="space-y-6 animate-in fade-in slide-in-from-right-4 duration-300">
+                <h2 className="text-[10px] font-black text-blue-400 uppercase tracking-widest flex items-center gap-2">
+                  <Terminal className="w-3.5 h-3.5" /> Stage 2: Metacognitive Guided Support (Coding)
+                </h2>
+
+                {/* Dynamic Metacognitive Prompts based on Feedbacks */}
+                {feedbacks && feedbacks.length > 0 ? (
+                  <div className="space-y-4">
+                    <section className="bg-blue-500/5 p-4 rounded-xl border border-blue-500/20 shadow-inner">
+                      <h3 className="text-[10px] font-bold text-blue-300 mb-3 uppercase tracking-tighter opacity-70 flex items-center gap-1.5">
+                        <HelpCircle className="w-3.5 h-3.5" /> Pertanyaan Reflektif Kode:
+                      </h3>
+                      <div className="space-y-3">
+                        {feedbacks.map((f: string, i: number) => {
+                          const isMatch = f.startsWith("✅");
+                          let reflectivePrompt = f;
+                          const fLower = f.toLowerCase();
+
+                          if (isMatch) {
+                            reflectivePrompt = "Sempurna! Bagian kode ini sudah berhasil dikonstruksi secara tepat sesuai diagram.";
+                          } else {
+                            if (fLower.includes("extends") || fLower.includes("implements") || fLower.includes("inheritance") || fLower.includes("relasi")) {
+                              reflectivePrompt = "Coba pikirkan pewarisan sifat: Apakah public class Anda sudah mewarisi kelas induk menggunakan kata kunci 'extends' atau 'implements'?";
+                            } else if (fLower.includes("method") || fLower.includes("fungsi")) {
+                              reflectivePrompt = "Periksa deklarasi method: Apakah parameter (jumlah & tipe data) serta return type method tersebut sudah sama dengan rancangan diagram?";
+                            } else if (fLower.includes("class") || fLower.includes("kelas")) {
+                              reflectivePrompt = "Periksa nama public class: Apakah ejaan dan besar-kecil hurufnya sudah persis sama dengan nama file Java tempat ia ditulis?";
+                            } else if (fLower.includes("rule") || fLower.includes("logic") || fLower.includes("logika")) {
+                              reflectivePrompt = "Coba bedah aturan logika: Apakah terdapat kondisi pencabangan (if-else) atau inisialisasi variabel anggota yang terlewat?";
+                            } else {
+                              reflectivePrompt = "Bandingkan struktur kode Anda dengan spesifikasi UML di atas. Apakah ada komponen yang belum sinkron?";
+                            }
+                          }
+
+                          return (
+                            <div key={i} className={`p-3 rounded-lg border flex flex-col gap-1.5 ${isMatch ? "bg-emerald-500/5 border-emerald-500/10" : "bg-slate-900/50 border-slate-800/80"}`}>
+                              <span className="text-[11px] text-slate-400 font-bold uppercase tracking-wider flex items-center gap-1">
+                                <span className={`w-1.5 h-1.5 rounded-full ${isMatch ? "bg-emerald-500" : "bg-orange-500"}`} />
+                                {isMatch ? "Status Lolos" : "Verifikasi Masalah"} #{i + 1}:
+                              </span>
+                              <p className="text-xs text-slate-300 font-medium">{f}</p>
+                              {!isMatch && (
+                                <div className="mt-1 pt-1.5 border-t border-slate-800/50 flex gap-2">
+                                  <span className="text-blue-400 font-bold text-xs shrink-0">💡 Refleksi:</span>
+                                  <p className="text-xs text-blue-200 font-medium leading-relaxed">{reflectivePrompt}</p>
+                                </div>
+                              )}
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </section>
+                  </div>
+                ) : (
+                  <div className="space-y-4">
+                    <section className="bg-blue-500/5 p-4 rounded-xl border border-blue-500/20 shadow-inner">
+                      <h3 className="text-[10px] font-bold text-blue-300 mb-3 uppercase tracking-tighter opacity-70 flex items-center gap-1.5">
+                        <HelpCircle className="w-3.5 h-3.5" /> Panduan Berpikir Mandiri:
+                      </h3>
+                      <ul className="text-[13px] text-slate-400 space-y-3.5 leading-relaxed font-medium">
+                        <li className="flex gap-2">
+                          <span className="text-blue-500">•</span>
+                          <span>"Apakah Anda sudah mendeklarasikan package dan mengimpor pustaka pendukung yang diperlukan di awal file?"</span>
+                        </li>
+                        <li className="flex gap-2">
+                          <span className="text-blue-500">•</span>
+                          <span>"Coba jalankan (Run) kode secara berkala untuk memverifikasi apakah ada error sintaksis sebelum mengecek kecocokan logika kelas."</span>
+                        </li>
+                      </ul>
+                    </section>
+                  </div>
+                )}
+
+                <section className="bg-slate-800/40 p-4 rounded-xl border border-slate-700/50 shadow-inner">
+                  <h3 className="text-[10px] font-bold text-slate-300 mb-3 uppercase tracking-tighter opacity-70 flex items-center gap-1.5">
+                    <Lightbulb className="w-3.5 h-3.5 text-yellow-500 animate-pulse" /> Checklist Metakognitif Koding:
+                  </h3>
+                  <div className="text-xs text-slate-400 space-y-2.5 leading-relaxed">
+                    <p>Sebelum mengirimkan kode ke server, lakukan verifikasi mandiri berikut:</p>
+                    <div className="flex gap-2 items-start">
+                      <input type="checkbox" className="mt-1 accent-blue-500" readOnly checked={feedbacks.length > 0 && feedbacks.every((f: any) => f.startsWith("✅"))} />
+                      <span>Semua method sudah diimplementasikan dengan struktur return yang valid.</span>
+                    </div>
+                    <div className="flex gap-2 items-start">
+                      <input type="checkbox" className="mt-1 accent-blue-500" readOnly checked={feedbacks.length > 0} />
+                      <span>Hubungan Pewarisan (Inheritance/extends) sudah sesuai spesifikasi kasus.</span>
+                    </div>
+                  </div>
+                </section>
+              </div>
+            )}
+
+            {stage === 1 && (
+              <div className="space-y-6 animate-in fade-in slide-in-from-right-4 duration-300">
+                <h2 className="text-[10px] font-black text-green-400 uppercase tracking-widest flex items-center gap-2">
+                  <Code className="w-3.5 h-3.5" /> Stage 1: Cognitive Directive Support (Coding)
+                </h2>
+
+                {/* Directive skeleton banner */}
+                <div className="bg-emerald-500/10 p-4 rounded-2xl border border-emerald-500/25 flex flex-col gap-2 shadow-md relative overflow-hidden">
+                  <div className="absolute top-0 right-0 w-2 h-2 rounded-full bg-emerald-500 animate-ping m-3" />
+                  <span className="text-[9px] font-black uppercase tracking-widest text-emerald-400 flex items-center gap-1.5">
+                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" /> Code Template Blueprint
+                  </span>
+                  <p className="text-xs text-emerald-100 leading-relaxed font-medium">
+                    Gunakan panduan kerangka cetak biru kelas Java di bawah ini untuk menulis kode Anda secara terstruktur.
+                  </p>
+                </div>
+
+                {/* Direct Blueprint Checklist */}
+                {answerKey && (
+                  <section className="bg-slate-800/40 p-4 rounded-xl border border-slate-700/50 shadow-inner space-y-3.5">
+                    <h3 className="text-[10px] font-bold text-slate-300 uppercase tracking-tighter opacity-70 flex items-center gap-1.5">
+                      <BookOpen className="w-3.5 h-3.5 text-emerald-400" /> Struktur Kelas Java yang Diminta:
+                    </h3>
+                    <div className="space-y-4">
+                      {answerKey.nodes && answerKey.nodes.map((node: any, idx: number) => {
+                        const isAbstract = node.data?.isAbstract;
+                        const isInterface = node.data?.isInterface;
+                        const stereotypeLabel = isInterface ? "interface" : isAbstract ? "abstract class" : "class";
+                        return (
+                          <div key={idx} className="p-3 bg-slate-900/60 rounded-xl border border-slate-800 space-y-2 font-mono text-[11px]">
+                            <div className="flex items-center justify-between border-b border-slate-800 pb-1.5">
+                              <span className="text-xs font-bold text-emerald-400 flex items-center gap-1">
+                                <Layers className="w-3 h-3 text-slate-400" />
+                                {stereotypeLabel} {node.data?.name}
+                              </span>
+                            </div>
+
+                            {/* Attributes */}
+                            {node.data?.attributes && node.data.attributes.length > 0 && (
+                              <div className="space-y-1">
+                                <span className="text-[9px] font-black uppercase text-slate-500 tracking-wider font-sans">Variables / Fields:</span>
+                                <ul className="text-slate-300 space-y-0.5 pl-2">
+                                  {node.data.attributes.map((attr: any, aIdx: number) => (
+                                    <li key={aIdx} className="flex gap-1">
+                                      <span className="text-emerald-500/80">{attr.access}</span>
+                                      <span>{attr.type}</span>
+                                      <span className="text-slate-200">{attr.name};</span>
+                                    </li>
+                                  ))}
+                                </ul>
+                              </div>
+                            )}
+
+                            {/* Methods */}
+                            {node.data?.methods && node.data.methods.length > 0 && (
+                              <div className="space-y-1 pt-1">
+                                <span className="text-[9px] font-black uppercase text-slate-500 tracking-wider font-sans">Methods:</span>
+                                <ul className="text-slate-300 space-y-1.5 pl-2">
+                                  {node.data.methods.map((meth: any, mIdx: number) => (
+                                    <li key={mIdx} className="flex flex-col">
+                                      <div className="flex gap-1">
+                                        <span className="text-emerald-500/80">{meth.access}</span>
+                                        {isAbstract && !isInterface && <span className="text-purple-400">abstract</span>}
+                                        <span>{meth.type}</span>
+                                        <span className="text-slate-200">{meth.name}()</span>
+                                      </div>
+                                    </li>
+                                  ))}
+                                </ul>
+                              </div>
+                            )}
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </section>
+                )}
+              </div>
+            )}
           </div>
         )}
       </div>
