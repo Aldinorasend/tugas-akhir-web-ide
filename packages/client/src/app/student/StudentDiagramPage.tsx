@@ -4,7 +4,7 @@ import DiagramCanvas from "@/components/diagram/DiagramCanvas";
 import ScaffoldingPanel from "@/components/ScaffoldingPanel";
 import { getRandomStudyCase, getStudyCaseById, compareCode } from "@/lib/api";
 import { useEffect, useRef, useState } from "react";
-import { useSearchParams } from "next/navigation";
+import { useSearchParams, useRouter } from "next/navigation";
 import { Shuffle, Lock, Unlock, Sparkles, Timer, HelpCircle } from "lucide-react";
 import ProjectExplorer from "@/components/ProjectExplorer";
 import JavaEditor from "@/components/JavaEditor";
@@ -15,6 +15,8 @@ import { useWorkspace } from "@/hooks/useWorkspace";
 import { randomUUID } from "crypto";
 
 export default function StudentDiagramPage({ isNonScaffolding = false }: { isNonScaffolding?: boolean }) {
+    const router = useRouter();
+    const [user, setUser] = useState<any>(null);
     const [gradeResult, setGradeResult] = useState<{
         score: number,
         feedbacks: string[],
@@ -308,6 +310,20 @@ export default function StudentDiagramPage({ isNonScaffolding = false }: { isNon
     };
 
     useEffect(() => {
+        const token = localStorage.getItem("token");
+        const storedUser = localStorage.getItem("user");
+        if (!token) {
+            router.push("/login");
+            return;
+        }
+        if (storedUser) {
+            const parsedUser = JSON.parse(storedUser);
+            setUser(parsedUser);
+            setNim(parsedUser.nim_nip || "");
+        }
+    }, [router]);
+
+    useEffect(() => {
         loadCase();
     }, [searchParams]);
 
@@ -355,7 +371,7 @@ export default function StudentDiagramPage({ isNonScaffolding = false }: { isNon
         try {
             // 3. Tembak fungsi API Grader bawaan kamu
             const result = await graderDiagram(
-                "90289652-6cf9-41a2-a106-ec1783c5146e", // Sesuai user_id valid kamu
+                user?.id || "90289652-6cf9-41a2-a106-ec1783c5146e", // Menggunakan user_id dari sesi login
                 studyCase.answer_key.exercise_id,
                 snapshotUML.nodes,
                 snapshotUML.edges,
@@ -426,7 +442,7 @@ export default function StudentDiagramPage({ isNonScaffolding = false }: { isNon
         setIsSubmitting(true);
         try {
             const result = await compareCode(
-                "90289652-6cf9-41a2-a106-ec1783c5146e",
+                user?.id || "90289652-6cf9-41a2-a106-ec1783c5146e", // Menggunakan user_id dari sesi login
                 studyCase.id || studyCase.answer_key.exercise_id,
                 allFiles,
                 updatedMetrics,
@@ -517,13 +533,16 @@ export default function StudentDiagramPage({ isNonScaffolding = false }: { isNon
                     <p className="text-sm text-white  leading-relaxed whitespace-pre-line text-justify">{studyCase?.description}</p>
                 </div>
 
-                <input
-                    type="text"
-                    value={nim}
-                    onChange={(e) => setNim(e.target.value)}
-                    placeholder="NIM"
-                    className="w-full p-3 mb-4 bg-slate-800 rounded-xl border border-slate-700 text-white outline-none focus:ring-1 focus:ring-blue-500"
-                />
+                <div className="mb-4">
+                    <label className="text-[10px] font-black uppercase tracking-wider text-slate-400 block mb-1">NIM Mahasiswa (Sesi Login)</label>
+                    <input
+                        type="text"
+                        value={nim}
+                        disabled={true}
+                        placeholder="NIM"
+                        className="w-full p-3 bg-slate-800/50 rounded-xl border border-slate-700/50 text-slate-400 outline-none cursor-not-allowed font-mono text-xs"
+                    />
+                </div>
 
                 {activeTab === "diagram" ? (
                     <button onClick={handleSubmitDiagram} disabled={isSubmitting} className="w-full py-3 bg-green-600 rounded-xl font-bold">

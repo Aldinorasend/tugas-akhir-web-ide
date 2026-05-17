@@ -2,10 +2,29 @@
 
 import React from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
-import { HelpCircle, Sparkles, ArrowLeft, ArrowRight, BookOpen, Layers } from "lucide-react";
+import { HelpCircle, Sparkles, ArrowLeft, ArrowRight, BookOpen, Layers, LogOut } from "lucide-react";
 
 export default function StudentRouteSelection() {
+  const router = useRouter();
+  const [user, setUser] = React.useState<any>(null);
+
+  React.useEffect(() => {
+    const token = localStorage.getItem("token");
+    const storedUser = localStorage.getItem("user");
+    if (!token) {
+      router.push("/login");
+    } else if (storedUser) {
+      setUser(JSON.parse(storedUser));
+    }
+  }, [router]);
+
+  const handleLogout = () => {
+    localStorage.removeItem("token");
+    localStorage.removeItem("user");
+    router.push("/login");
+  };
   return (
     <div className="min-h-screen bg-[#0f172a] text-white flex flex-col items-center justify-center p-6 relative overflow-hidden">
       {/* Decorative background lines */}
@@ -18,14 +37,30 @@ export default function StudentRouteSelection() {
         initial={{ opacity: 0, y: 15 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.6 }}
-        className="text-center mb-12"
+        className="text-center mb-12 w-full max-w-3xl"
       >
-        <Link 
-          href="/" 
-          className="inline-flex items-center gap-2 text-xs font-bold uppercase tracking-widest text-slate-500 hover:text-slate-300 transition-colors mb-6"
-        >
-          <ArrowLeft size={14} /> Back to Home
-        </Link>
+        <div className="flex justify-between items-center w-full mb-6">
+          <Link 
+            href="/" 
+            className="inline-flex items-center gap-2 text-xs font-bold uppercase tracking-widest text-slate-500 hover:text-slate-300 transition-colors"
+          >
+            <ArrowLeft size={14} /> Back to Home
+          </Link>
+          {user && (
+            <button
+              onClick={handleLogout}
+              className="inline-flex items-center gap-1.5 text-xs font-bold uppercase tracking-widest text-rose-500 hover:text-rose-400 transition-colors bg-rose-500/5 px-3 py-1.5 rounded-lg border border-rose-500/10"
+            >
+              <LogOut size={12} /> Logout
+            </button>
+          )}
+        </div>
+        
+        {user && (
+          <p className="text-blue-400 text-xs font-bold uppercase tracking-widest mb-2">
+            Selamat datang, {user.full_name || user.nim_nip}
+          </p>
+        )}
         <h1 className="text-3xl font-extrabold tracking-tight mb-3">
           Pilih Mode Pembelajaran
         </h1>
