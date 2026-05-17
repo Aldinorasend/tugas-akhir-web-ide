@@ -24,12 +24,16 @@ export default function ClassNode({
     );
   };
 
+  const toggleConcrete = () => {
+    updateNodeData({ isAbstract: false, isInterface: false });
+  };
+
   const toggleAbstract = () => {
-    updateNodeData({ isAbstract: !isAbstract, isInterface: false });
+    updateNodeData({ isAbstract: isAbstract ? undefined : true, isInterface: false });
   };
 
   const toggleInterface = () => {
-    updateNodeData({ isInterface: !isInterface, isAbstract: false });
+    updateNodeData({ isInterface: isInterface ? undefined : true, isAbstract: false });
   };
 
   const handleNameChange = (newName: string) => {
@@ -95,8 +99,18 @@ export default function ClassNode({
     "void", "List", "Map", "Set", "Object"
   ];
 
+  const isNotSelected = isAbstract === undefined && isInterface === undefined;
+
   return (
-    <div className={`bg-slate-800 border-2 ${isInterface ? 'border-purple-500/50' : isAbstract ? 'border-amber-500/50' : 'border-slate-700'} rounded-xl shadow-2xl overflow-hidden min-w-[260px] transition-all hover:border-blue-500/50 group text-slate-200`}>
+    <div className={`bg-slate-800 border-2 ${
+      isNotSelected 
+        ? 'border-rose-500/40 border-dashed' 
+        : isInterface 
+          ? 'border-purple-500/50' 
+          : isAbstract 
+            ? 'border-amber-500/50' 
+            : 'border-blue-500/40'
+    } rounded-xl shadow-2xl overflow-hidden min-w-[260px] transition-all hover:border-blue-500/50 group text-slate-200`}>
       {/* Handles for connections */}
       <Handle type="target" position={Position.Top} className="w-3 h-3 bg-blue-500 border-2 border-slate-800" />
       <Handle type="source" position={Position.Bottom} className="w-3 h-3 bg-blue-500 border-2 border-slate-800" />
@@ -110,14 +124,20 @@ export default function ClassNode({
             {!readOnly && (
               <>
                 <button
+                  onClick={(e) => { e.stopPropagation(); toggleConcrete(); }}
+                  className={`text-[9px] px-1.5 py-0.5 rounded border font-bold transition-colors ${isAbstract === false && isInterface === false ? 'bg-blue-500/20 border-blue-500/50 text-blue-400' : 'bg-slate-800 border-slate-700 text-slate-500 hover:border-slate-600'}`}
+                >
+                  CLASS
+                </button>
+                <button
                   onClick={(e) => { e.stopPropagation(); toggleAbstract(); }}
-                  className={`text-[9px] px-1.5 py-0.5 rounded border transition-colors ${isAbstract ? 'bg-amber-500/20 border-amber-500/50 text-amber-400' : 'bg-slate-800 border-slate-700 text-slate-500 hover:border-slate-600'}`}
+                  className={`text-[9px] px-1.5 py-0.5 rounded border font-bold transition-colors ${isAbstract ? 'bg-amber-500/20 border-amber-500/50 text-amber-400' : 'bg-slate-800 border-slate-700 text-slate-500 hover:border-slate-600'}`}
                 >
                   ABSTRACT
                 </button>
                 <button
                   onClick={(e) => { e.stopPropagation(); toggleInterface(); }}
-                  className={`text-[9px] px-1.5 py-0.5 rounded border transition-colors ${isInterface ? 'bg-purple-500/20 border-purple-500/50 text-purple-400' : 'bg-slate-800 border-slate-700 text-slate-500 hover:border-slate-600'}`}
+                  className={`text-[9px] px-1.5 py-0.5 rounded border font-bold transition-colors ${isInterface ? 'bg-purple-500/20 border-purple-500/50 text-purple-400' : 'bg-slate-800 border-slate-700 text-slate-500 hover:border-slate-600'}`}
                 >
                   INTERFACE
                 </button>
@@ -135,6 +155,7 @@ export default function ClassNode({
         </div>
 
         <div className="flex flex-col items-center">
+          {isNotSelected && <span className="text-[9px] text-rose-400 font-bold mb-1 tracking-wider uppercase bg-rose-500/10 px-1.5 py-0.5 rounded border border-rose-500/20">« Pilih Tipe Kelas »</span>}
           {isInterface && <span className="text-[10px] text-purple-400 font-bold mb-1">«interface»</span>}
           {isAbstract && <span className="text-[10px] text-amber-400 font-bold mb-1">«abstract»</span>}
           {readOnly ? (

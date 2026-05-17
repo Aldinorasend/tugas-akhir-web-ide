@@ -5,7 +5,7 @@ import ScaffoldingPanel from "@/components/ScaffoldingPanel";
 import { getRandomStudyCase, getStudyCaseById, compareCode } from "@/lib/api";
 import { useEffect, useRef, useState } from "react";
 import { useSearchParams } from "next/navigation";
-import { Shuffle, Lock, Unlock, Sparkles, Timer } from "lucide-react";
+import { Shuffle, Lock, Unlock, Sparkles, Timer, HelpCircle } from "lucide-react";
 import ProjectExplorer from "@/components/ProjectExplorer";
 import JavaEditor from "@/components/JavaEditor";
 import OutputPanel from "@/components/OutputPanel";
@@ -609,18 +609,18 @@ export default function StudentDiagramPage() {
                                 : "bg-slate-800 text-slate-400 border border-slate-700 hover:bg-slate-700"
                                 }`}
                         >
-                            <Sparkles className={`w-3 h-3 ${showScaffolding ? "animate-pulse" : ""}`} />
+                            <HelpCircle className="w-3 h-3 text-slate-400" />
                             <span>{showScaffolding ? "Hide Scaffolding" : "Show Scaffolding"}</span>
                         </button>
 
                         {activeTab === "diagram" ? (
                             <div className="bg-blue-500/10 text-blue-400 border border-blue-500/10 px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-widest flex items-center gap-1.5 shadow-md">
-                                <div className="w-1.5 h-1.5 rounded-full bg-blue-500 animate-pulse" />
+                                <div className="w-1.5 h-1.5 rounded-full bg-blue-500" />
                                 Analyzing UML Specifications
                             </div>
                         ) : (
                             <div className="bg-orange-500/10 text-orange-400 border border-orange-500/10 px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-widest flex items-center gap-1.5 shadow-md">
-                                <div className="w-1.5 h-1.5 rounded-full bg-orange-500 animate-pulse" />
+                                <div className="w-1.5 h-1.5 rounded-full bg-orange-500" />
                                 Solving starter code errors
                             </div>
                         )}

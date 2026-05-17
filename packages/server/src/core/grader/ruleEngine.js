@@ -45,13 +45,18 @@ export const compareDiagrams = (studentNodes = [], studentEdges = [], rules) => 
 
         // Cek Properti Kelas (Abstract/Interface)
         let classTypeMatch = true;
-        if (studentNode.data?.isAbstract !== ruleNode.data?.isAbstract) {
+        if (studentNode.data?.isAbstract === undefined && studentNode.data?.isInterface === undefined) {
             classTypeMatch = false;
-            feedbacks.push(`Pastikan sifat abstract/concrete pada kelas '${ruleName}' sudah sesuai dengan instruksi.`);
-        }
-        if (studentNode.data?.isInterface !== ruleNode.data?.isInterface) {
-            classTypeMatch = false;
-            feedbacks.push(`Pastikan tipe (Class vs Interface) untuk '${ruleName}' sudah benar.`);
+            feedbacks.push(`Tipe kelas untuk '${ruleName}' belum dipilih. Silakan klik tombol CLASS, ABSTRACT, atau INTERFACE di panel diagram.`);
+        } else {
+            if (!!studentNode.data?.isAbstract !== !!ruleNode.data?.isAbstract) {
+                classTypeMatch = false;
+                feedbacks.push(`Pastikan sifat abstract/concrete pada kelas '${ruleName}' sudah sesuai dengan instruksi.`);
+            }
+            if (!!studentNode.data?.isInterface !== !!ruleNode.data?.isInterface) {
+                classTypeMatch = false;
+                feedbacks.push(`Pastikan tipe (Class vs Interface) untuk '${ruleName}' sudah benar.`);
+            }
         }
 
         if (classTypeMatch) score += 1;
@@ -137,6 +142,32 @@ export const compareDiagrams = (studentNodes = [], studentEdges = [], rules) => 
             score += 1;
         } else {
             feedbacks.push(`Tipe hubungan antara '${sourceClassName}' dan '${targetClassName}' masih belum tepat.`);
+        }
+    });
+
+    // Cek apakah ada relasi mahasiswa yang berlebih atau tidak tepat (tidak 1:1)
+    studentEdges.forEach(sEdge => {
+        const sSource = studentNodeIdToName[sEdge.source];
+        const sTarget = studentNodeIdToName[sEdge.target];
+        const sType = (sEdge.type || sEdge.data?.type || "").toLowerCase();
+
+        if (!sSource || !sTarget) {
+            totalPossible += 1;
+            feedbacks.push(`Terdapat relasi yang tidak terhubung dengan benar ke kelas.`);
+            return;
+        }
+
+        // Cari apakah ada relasi yang sama di kunci jawaban (edgesRule)
+        const matchedInRule = edgesRule.some(ruleEdge => {
+            const rSource = ruleNodeIdToName[ruleEdge.source];
+            const rTarget = ruleNodeIdToName[ruleEdge.target];
+            const rType = (ruleEdge.type || ruleEdge.data?.type || "").toLowerCase();
+            return rSource === sSource && rTarget === sTarget && rType === sType;
+        });
+
+        if (!matchedInRule) {
+            totalPossible += 1;
+            feedbacks.push(`Relasi '${sType.toUpperCase()}' dari '${sSource}' ke '${sTarget}' tidak diperlukan atau salah.`);
         }
     });
 

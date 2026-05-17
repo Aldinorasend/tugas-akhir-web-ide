@@ -39,11 +39,11 @@ export default function ScaffoldingPanel({ stage, activeTab, answerKey, diagramR
   };
 
   return (
-    <div className="w-80 h-full border-l border-slate-800 bg-[#0f172a] flex flex-col shadow-2xl animate-in slide-in-from-right duration-300">
+    <div className="w-80 h-full border-l border-slate-800 bg-[#0f172a] flex flex-col shadow-2xl">
       {/* Header with Close Button */}
       <div className="p-6 border-b border-slate-800 flex justify-between items-center bg-slate-900/50">
         <div className="flex items-center gap-2">
-          <Sparkles className="w-4 h-4 text-orange-400" />
+          <Info className="w-4 h-4 text-slate-400" />
           <h2 className="text-[10px] font-black text-slate-300 uppercase tracking-widest">Support Panel</h2>
         </div>
         <button
@@ -58,47 +58,25 @@ export default function ScaffoldingPanel({ stage, activeTab, answerKey, diagramR
         {activeTab === "diagram" ? (
           <div className="space-y-6">
             {stage === 3 && (
-              <div className="space-y-4 animate-in fade-in slide-in-from-right-4 duration-300">
+              <div className="space-y-4">
                 <h2 className="text-[10px] font-black text-rose-400 uppercase tracking-widest flex items-center gap-2">
-                  <Heart className="w-3.5 h-3.5 text-rose-500 animate-pulse" /> Stage 3: Affective Support
+                  <Info className="w-3.5 h-3.5 text-rose-400" /> Stage 3: Affective Support
                 </h2>
 
                 {/* Encouragement Card */}
-                <div className="relative overflow-hidden bg-gradient-to-br from-rose-500/10 to-orange-500/5 p-5 rounded-2xl border border-rose-500/20 shadow-lg">
-                  <div className="absolute -right-4 -bottom-4 w-16 h-16 bg-rose-500/10 rounded-full blur-xl" />
+                <div className="relative overflow-hidden bg-slate-900 p-5 rounded-2xl border border-rose-500/20 shadow-lg">
                   <p className="text-[13px] text-rose-200 font-medium italic leading-relaxed mb-3">
                     "{getRandomEncouragement()}"
                   </p>
-                  <p className="text-[11px] text-slate-400 leading-relaxed">
+                  <p className="text-[11px] text-slate-400 leading-relaxed font-normal">
                     Merancang perangkat lunak adalah proses iteratif. Tidak masalah jika diagram Anda belum sempurna pada percobaan pertama. Mari fokus satu demi satu langkah!
                   </p>
-                </div>
-
-                {/* Grounding Strategy */}
-                <div className="bg-slate-800/40 p-4 rounded-xl border border-slate-700/50 space-y-3">
-                  <h3 className="text-[10px] font-bold text-slate-300 uppercase tracking-tighter opacity-70 flex items-center gap-1.5">
-                    <Milestone className="w-3 h-3 text-orange-400" /> Tips Mengurangi Kompleksitas:
-                  </h3>
-                  <ul className="text-xs text-slate-400 space-y-2.5 leading-relaxed">
-                    <li className="flex gap-2">
-                      <span className="text-orange-500">1.</span>
-                      <span><strong>Identifikasi Kata Benda:</strong> Baca deskripsi kasus secara perlahan. Kata benda penting biasanya merepresentasikan sebuah <strong>Class</strong>.</span>
-                    </li>
-                    <li className="flex gap-2">
-                      <span className="text-orange-500">2.</span>
-                      <span><strong>Identifikasi Kata Kerja:</strong> Kata kerja biasanya merepresentasikan sebuah <strong>Method</strong> atau hubungan asosiasi antar kelas.</span>
-                    </li>
-                    <li className="flex gap-2">
-                      <span className="text-orange-500">3.</span>
-                      <span><strong>Abaikan Detail Dulu:</strong> Gambarlah kotak kelasnya terlebih dahulu sebelum pusing memikirkan atribut dan tipe data.</span>
-                    </li>
-                  </ul>
                 </div>
               </div>
             )}
 
             {stage === 2 && (
-              <div className="space-y-6 animate-in fade-in slide-in-from-right-4 duration-300">
+              <div className="space-y-6">
                 <h2 className="text-[10px] font-black text-blue-400 uppercase tracking-widest flex items-center gap-2">
                   <Terminal className="w-3.5 h-3.5" /> Stage 2: Metacognitive Guided Support
                 </h2>
@@ -112,9 +90,9 @@ export default function ScaffoldingPanel({ stage, activeTab, answerKey, diagramR
                       </h3>
                       <div className="space-y-3">
                         {feedbacks.map((f: string, i: number) => {
-                          // Dynamic conversion of raw feedback into reflective prompts
-                          let reflectivePrompt = f;
-                          const fLower = f.toLowerCase();
+                          const cleanF = f.replace(/[\u2700-\u27BF]|[\uE000-\uF8FF]|\uD83C[\uDC00-\uDFFF]|\uD83D[\uDC00-\uDFFF]|[\u2011-\u26FF]|\uD83E[\uDD00-\uDFFF]/g, '').trim();
+                          let reflectivePrompt = cleanF;
+                          const fLower = cleanF.toLowerCase();
                           if (fLower.includes("belum ditemukan") || fLower.includes("missing class")) {
                             reflectivePrompt = `Coba telaah kembali deskripsi: Apakah ada entitas penting yang terlewat dan belum Anda buatkan Class Box-nya di kanvas?`;
                           } else if (fLower.includes("tipe hubungan") || fLower.includes("relasi antara")) {
@@ -129,9 +107,9 @@ export default function ScaffoldingPanel({ stage, activeTab, answerKey, diagramR
                               <span className="text-[11px] text-slate-400 font-bold uppercase tracking-wider flex items-center gap-1">
                                 <span className="w-1.5 h-1.5 rounded-full bg-orange-500" /> Deteksi Masalah #{i + 1}:
                               </span>
-                              <p className="text-xs text-slate-300 italic">"{f}"</p>
+                              <p className="text-xs text-slate-300 italic">"{cleanF}"</p>
                               <div className="mt-1 pt-1.5 border-t border-slate-800/50 flex gap-2">
-                                <span className="text-blue-400 font-bold text-xs">💡 Tanya Dirimu:</span>
+                                <span className="text-blue-400 font-bold text-xs">Tanya Dirimu:</span>
                                 <p className="text-xs text-blue-200 font-medium leading-relaxed">{reflectivePrompt}</p>
                               </div>
                             </div>
@@ -169,9 +147,33 @@ export default function ScaffoldingPanel({ stage, activeTab, answerKey, diagramR
                   </div>
                 )}
 
+                {/* Refleksi Arsitektur: Abstract vs Interface */}
+                <div className="bg-indigo-500/5 p-4 rounded-xl border border-indigo-500/20 space-y-3">
+                  <h4 className="text-[10px] font-black text-indigo-300 uppercase tracking-widest flex items-center gap-1.5">
+                    <Layers className="w-3.5 h-3.5 text-indigo-400" /> Refleksi: Abstract vs Interface
+                  </h4>
+                  <p className="text-[11px] text-slate-400 leading-relaxed font-normal">
+                    Masih ragu membedakan kapan menggunakan Kelas Abstrak atau Interface pada Studi Kasus Anda? Tanyakan ini pada analisis Anda:
+                  </p>
+                  <div className="space-y-2 pt-0.5">
+                    <div className="bg-slate-900/40 p-2.5 rounded border border-slate-800/80">
+                      <strong className="text-[9px] text-amber-400 uppercase tracking-wider block mb-0.5 font-bold">Kelas Abstrak (Abstract Class)</strong>
+                      <p className="text-[11px] text-slate-300 leading-relaxed font-normal">
+                        Apakah entitas-entitas tersebut berkerabat erat ("is-a") dan perlu mewarisi atribut / variabel keadaan yang sama? Jika ya, gunakan Kelas Abstrak.
+                      </p>
+                    </div>
+                    <div className="bg-slate-900/40 p-2.5 rounded border border-slate-800/80">
+                      <strong className="text-[9px] text-purple-400 uppercase tracking-wider block mb-0.5 font-bold">Interface</strong>
+                      <p className="text-[11px] text-slate-300 leading-relaxed font-normal">
+                        Apakah Anda hanya ingin menetapkan kontrak perilaku ("can-do") tanpa membagikan variabel? Jika kelas-kelas tersebut hanya berbagi fungsi yang sama, gunakan Interface.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
                 <section className="bg-slate-800/40 p-4 rounded-xl border border-slate-700/50 shadow-inner">
                   <h3 className="text-[10px] font-bold text-slate-300 mb-3 uppercase tracking-tighter opacity-70 flex items-center gap-1.5">
-                    <Lightbulb className="w-3.5 h-3.5 text-yellow-500 animate-pulse" /> Strategic Checklist:
+                    <Lightbulb className="w-3.5 h-3.5 text-yellow-500" /> Strategic Checklist:
                   </h3>
                   <div className="text-xs text-slate-400 space-y-2 leading-relaxed">
                     <p>Sebelum mengirim jawaban, tanyakan ini pada diri Anda:</p>
@@ -189,16 +191,15 @@ export default function ScaffoldingPanel({ stage, activeTab, answerKey, diagramR
             )}
 
             {stage === 1 && (
-              <div className="space-y-6 animate-in fade-in slide-in-from-right-4 duration-300">
+              <div className="space-y-6">
                 <h2 className="text-[10px] font-black text-green-400 uppercase tracking-widest flex items-center gap-2">
                   <Code className="w-3.5 h-3.5" /> Stage 1: Cognitive Directive Support
                 </h2>
 
                 {/* Active Skeleton Badge */}
-                <div className="bg-emerald-500/10 p-4 rounded-2xl border border-emerald-500/25 flex flex-col gap-2 shadow-md relative overflow-hidden">
-                  <div className="absolute top-0 right-0 w-2 h-2 rounded-full bg-emerald-500 animate-ping m-3" />
+                <div className="bg-slate-900 p-4 rounded-2xl border border-slate-800 flex flex-col gap-2 shadow-md relative overflow-hidden">
                   <span className="text-[9px] font-black uppercase tracking-widest text-emerald-400 flex items-center gap-1.5">
-                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" /> Skeleton Mode Active
+                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" /> Skeleton Mode Active
                   </span>
                   <p className="text-xs text-emerald-100 leading-relaxed font-medium">
                     Struktur kerangka dasar UML telah otomatis kami injeksikan ke dalam kanvas Anda.
@@ -207,128 +208,31 @@ export default function ScaffoldingPanel({ stage, activeTab, answerKey, diagramR
                     Fokus utama Anda sekarang adalah melengkapi isi kotak-kotak kelas tersebut (atribut dan method) serta menghubungkannya dengan relasi yang tepat.
                   </p>
                 </div>
-
-                {/* Direct Blueprint Checklist */}
-                {answerKey && (
-                  <section className="bg-slate-800/40 p-4 rounded-xl border border-slate-700/50 shadow-inner space-y-3.5">
-                    <h3 className="text-[10px] font-bold text-slate-300 uppercase tracking-tighter opacity-70 flex items-center gap-1.5">
-                      <BookOpen className="w-3.5 h-3.5 text-emerald-400" /> UML Blueprint Requirements:
-                    </h3>
-                    <div className="space-y-4">
-                      {answerKey.nodes && answerKey.nodes.map((node: any, idx: number) => {
-                        const isAbstract = node.data?.isAbstract;
-                        const isInterface = node.data?.isInterface;
-                        const stereotypeLabel = isInterface ? "<<Interface>>" : isAbstract ? "<<Abstract>>" : "";
-                        return (
-                          <div key={idx} className="p-3 bg-slate-900/60 rounded-xl border border-slate-800 space-y-2">
-                            <div className="flex items-center justify-between">
-                              <span className="text-xs font-bold text-white flex items-center gap-1">
-                                <Layers className="w-3 h-3 text-slate-400" />
-                                {node.data?.name}
-                              </span>
-                              {stereotypeLabel && (
-                                <span className="text-[8px] px-1.5 py-0.5 rounded bg-slate-800 border border-slate-700 text-slate-400 font-mono">
-                                  {stereotypeLabel}
-                                </span>
-                              )}
-                            </div>
-
-                            {/* Attributes */}
-                            {node.data?.attributes && node.data.attributes.length > 0 && (
-                              <div className="space-y-1">
-                                <span className="text-[9px] font-black uppercase text-slate-500 tracking-wider">Required Attributes:</span>
-                                <ul className="text-xs font-mono text-emerald-400/80 space-y-0.5">
-                                  {node.data.attributes.map((attr: any, aIdx: number) => (
-                                    <li key={aIdx} className="flex gap-1.5 items-center">
-                                      <span className="text-[10px] text-slate-600">{attr.access === "private" ? "-" : attr.access === "public" ? "+" : "#"}</span>
-                                      <span>{attr.name}</span>
-                                      <span className="text-slate-600">:</span>
-                                      <span className="text-slate-400">{attr.type}</span>
-                                    </li>
-                                  ))}
-                                </ul>
-                              </div>
-                            )}
-
-                            {/* Methods */}
-                            {node.data?.methods && node.data.methods.length > 0 && (
-                              <div className="space-y-1">
-                                <span className="text-[9px] font-black uppercase text-slate-500 tracking-wider">Required Methods:</span>
-                                <ul className="text-xs font-mono text-emerald-400/80 space-y-0.5">
-                                  {node.data.methods.map((meth: any, mIdx: number) => (
-                                    <li key={mIdx} className="flex gap-1.5 items-center">
-                                      <span className="text-[10px] text-slate-600">{meth.access === "private" ? "-" : meth.access === "public" ? "+" : "#"}</span>
-                                      <span>{meth.name}()</span>
-                                      <span className="text-slate-600">:</span>
-                                      <span className="text-slate-400">{meth.type}</span>
-                                    </li>
-                                  ))}
-                                </ul>
-                              </div>
-                            )}
-                          </div>
-                        );
-                      })}
-
-                      {/* Relationship Hint */}
-                      {answerKey.edges && answerKey.edges.length > 0 && (
-                        <div className="p-3 bg-slate-900/40 rounded-xl border border-slate-800 space-y-1.5">
-                          <span className="text-[9px] font-black uppercase text-slate-500 tracking-wider">Relationship Connections:</span>
-                          <p className="text-[11px] text-slate-400 leading-relaxed">
-                            Hubungkan kelas-kelas tersebut dengan relasi yang tepat (seperti pewarisan/generalisasi atau realisasi interface) untuk memastikan fungsionalitas sistem berjalan utuh.
-                          </p>
-                        </div>
-                      )}
-                    </div>
-                  </section>
-                )}
               </div>
             )}
           </div>
         ) : (
           <div className="space-y-6">
             {stage === 3 && (
-              <div className="space-y-4 animate-in fade-in slide-in-from-right-4 duration-300">
+              <div className="space-y-4">
                 <h2 className="text-[10px] font-black text-rose-400 uppercase tracking-widest flex items-center gap-2">
-                  <Heart className="w-3.5 h-3.5 text-rose-500 animate-pulse" /> Stage 3: Affective Support (Coding)
+                  <Info className="w-3.5 h-3.5 text-rose-500" /> Stage 3: Affective Support (Coding)
                 </h2>
 
                 {/* Encouragement Card */}
-                <div className="relative overflow-hidden bg-gradient-to-br from-rose-500/10 to-orange-500/5 p-5 rounded-2xl border border-rose-500/20 shadow-lg">
-                  <div className="absolute -right-4 -bottom-4 w-16 h-16 bg-rose-500/10 rounded-full blur-xl" />
+                <div className="relative overflow-hidden bg-slate-900 p-5 rounded-2xl border border-rose-500/20 shadow-lg">
                   <p className="text-[13px] text-rose-200 font-medium italic leading-relaxed mb-3">
                     "{getRandomEncouragement()}"
                   </p>
-                  <p className="text-[11px] text-slate-400 leading-relaxed">
+                  <p className="text-[11px] text-slate-400 leading-relaxed font-normal">
                     Menghadapi error kompilasi atau ketidaksesuaian logika adalah hal yang biasa dalam dunia pemrograman. Jangan berkecil hati, mari kita bedah perlahan!
                   </p>
-                </div>
-
-                {/* Grounding Strategy */}
-                <div className="bg-slate-800/40 p-4 rounded-xl border border-slate-700/50 space-y-3">
-                  <h3 className="text-[10px] font-bold text-slate-300 uppercase tracking-tighter opacity-70 flex items-center gap-1.5">
-                    <Milestone className="w-3 h-3 text-orange-400" /> Strategi Perbaikan Kode:
-                  </h3>
-                  <ul className="text-xs text-slate-400 space-y-2.5 leading-relaxed">
-                    <li className="flex gap-2">
-                      <span className="text-orange-500">1.</span>
-                      <span><strong>Baca Error Log:</strong> Lihat panel output di bawah editor. Baris error biasanya menunjukkan letak sintaks yang salah.</span>
-                    </li>
-                    <li className="flex gap-2">
-                      <span className="text-orange-500">2.</span>
-                      <span><strong>Periksa Blueprint Diagram:</strong> Buka kembali tab UML Diagram untuk memastikan kelas, atribut, dan relasi Anda sudah sama persis.</span>
-                    </li>
-                    <li className="flex gap-2">
-                      <span className="text-orange-500">3.</span>
-                      <span><strong>Uji Bertahap:</strong> Mulailah dengan memperbaiki deklarasi kelas dan method kosong terlebih dahulu sebelum menulis isi algoritma logikanya.</span>
-                    </li>
-                  </ul>
                 </div>
               </div>
             )}
 
             {stage === 2 && (
-              <div className="space-y-6 animate-in fade-in slide-in-from-right-4 duration-300">
+              <div className="space-y-6">
                 <h2 className="text-[10px] font-black text-blue-400 uppercase tracking-widest flex items-center gap-2">
                   <Terminal className="w-3.5 h-3.5" /> Stage 2: Metacognitive Guided Support (Coding)
                 </h2>
@@ -342,15 +246,16 @@ export default function ScaffoldingPanel({ stage, activeTab, answerKey, diagramR
                       </h3>
                       <div className="space-y-3">
                         {feedbacks.map((f: string, i: number) => {
-                          const isMatch = f.startsWith("✅");
-                          let reflectivePrompt = f;
-                          const fLower = f.toLowerCase();
+                          const cleanF = f.replace(/[\u2700-\u27BF]|[\uE000-\uF8FF]|\uD83C[\uDC00-\uDFFF]|\uD83D[\uDC00-\uDFFF]|[\u2011-\u26FF]|\uD83E[\uDD00-\uDFFF]/g, '').trim();
+                          const isMatch = cleanF.startsWith("✅") || f.startsWith("✅");
+                          let reflectivePrompt = cleanF;
+                          const fLower = cleanF.toLowerCase();
 
                           if (isMatch) {
                             reflectivePrompt = "Sempurna! Bagian kode ini sudah berhasil dikonstruksi secara tepat sesuai diagram.";
                           } else {
                             if (fLower.includes("extends") || fLower.includes("implements") || fLower.includes("inheritance") || fLower.includes("relasi")) {
-                              reflectivePrompt = "Coba pikirkan pewarisan sifat: Apakah public class Anda sudah mewarisi kelas induk menggunakan kata kunci 'extends' atau 'implements'?";
+                              reflectivePrompt = "Coba pikirkan pewarisan sifat: Apakah public class Anda sudah mewarisi kelas induk menggunakan kata kunci 'extends' or 'implements'?";
                             } else if (fLower.includes("method") || fLower.includes("fungsi")) {
                               reflectivePrompt = "Periksa deklarasi method: Apakah parameter (jumlah & tipe data) serta return type method tersebut sudah sama dengan rancangan diagram?";
                             } else if (fLower.includes("class") || fLower.includes("kelas")) {
@@ -368,10 +273,10 @@ export default function ScaffoldingPanel({ stage, activeTab, answerKey, diagramR
                                 <span className={`w-1.5 h-1.5 rounded-full ${isMatch ? "bg-emerald-500" : "bg-orange-500"}`} />
                                 {isMatch ? "Status Lolos" : "Verifikasi Masalah"} #{i + 1}:
                               </span>
-                              <p className="text-xs text-slate-300 font-medium">{f}</p>
+                              <p className="text-xs text-slate-300 font-medium">{cleanF}</p>
                               {!isMatch && (
                                 <div className="mt-1 pt-1.5 border-t border-slate-800/50 flex gap-2">
-                                  <span className="text-blue-400 font-bold text-xs shrink-0">💡 Refleksi:</span>
+                                  <span className="text-blue-400 font-bold text-xs shrink-0">Refleksi:</span>
                                   <p className="text-xs text-blue-200 font-medium leading-relaxed">{reflectivePrompt}</p>
                                 </div>
                               )}
@@ -403,7 +308,7 @@ export default function ScaffoldingPanel({ stage, activeTab, answerKey, diagramR
 
                 <section className="bg-slate-800/40 p-4 rounded-xl border border-slate-700/50 shadow-inner">
                   <h3 className="text-[10px] font-bold text-slate-300 mb-3 uppercase tracking-tighter opacity-70 flex items-center gap-1.5">
-                    <Lightbulb className="w-3.5 h-3.5 text-yellow-500 animate-pulse" /> Checklist Metakognitif Koding:
+                    <Lightbulb className="w-3.5 h-3.5 text-yellow-500" /> Checklist Metakognitif Koding:
                   </h3>
                   <div className="text-xs text-slate-400 space-y-2.5 leading-relaxed">
                     <p>Sebelum mengirimkan kode ke server, lakukan verifikasi mandiri berikut:</p>
@@ -421,16 +326,15 @@ export default function ScaffoldingPanel({ stage, activeTab, answerKey, diagramR
             )}
 
             {stage === 1 && (
-              <div className="space-y-6 animate-in fade-in slide-in-from-right-4 duration-300">
+              <div className="space-y-6">
                 <h2 className="text-[10px] font-black text-green-400 uppercase tracking-widest flex items-center gap-2">
                   <Code className="w-3.5 h-3.5" /> Stage 1: Cognitive Directive Support (Coding)
                 </h2>
 
                 {/* Directive skeleton banner */}
-                <div className="bg-emerald-500/10 p-4 rounded-2xl border border-emerald-500/25 flex flex-col gap-2 shadow-md relative overflow-hidden">
-                  <div className="absolute top-0 right-0 w-2 h-2 rounded-full bg-emerald-500 animate-ping m-3" />
+                <div className="bg-slate-900 p-4 rounded-2xl border border-slate-800 flex flex-col gap-2 shadow-md relative overflow-hidden">
                   <span className="text-[9px] font-black uppercase tracking-widest text-emerald-400 flex items-center gap-1.5">
-                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" /> Code Template Blueprint
+                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" /> Code Template Blueprint
                   </span>
                   <p className="text-xs text-emerald-100 leading-relaxed font-medium">
                     Gunakan panduan kerangka cetak biru kelas Java di bawah ini untuk menulis kode Anda secara terstruktur.
