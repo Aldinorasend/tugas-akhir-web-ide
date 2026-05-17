@@ -107,6 +107,7 @@ export const gradeAndLogDiagram = async (req, res) => {
             success: true,
             isPassed: gradeResult.isPassed,
             score: gradeResult.finalGrade,
+            matrix: decision.matrix,
             hints: gradeResult.feedbacks, // Feedback teks mendalam bawaan fungsi kamu
             analytics: decision.analytics, // Kategori (Movers, Tinkerers, Stoppers) + Frustration Index
             scaffolding: decision.scaffolding // Level bantuan (1, 2, atau 3) beserta alasannya

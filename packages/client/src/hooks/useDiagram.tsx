@@ -187,6 +187,26 @@ export function useDiagram() {
     );
     trackAction("component_modification_count");
   }, [setEdges, trackAction]);
+  const clearHistoricalIdleTime = useCallback(() => {
+    lastActivityRef.current = Date.now();
+    currentIdleRef.current = 0;
+    accumulatedIdleRef.current = 0;
+    maxIdleRef.current = 0;
+
+    // Wipe metrics back down safely so the next window calculation starts clean
+    setDiagramMetrics(prev => ({
+      ...prev,
+      temporal: {
+        time_spent_ms: prev.temporal.time_spent_ms, // keep total session time
+        idle_time_ms: 0, // flush the trap!
+        max_single_idle_ms: 0
+      },
+      spatial_churn: {
+        ...prev.spatial_churn,
+        // Optional: you can reset action counts per cycle if you want micro-burst tracking
+      }
+    }));
+  }, []);
 
   // Fungsi luar untuk memicu log submission (Ditekan pas klik submit diagram)
   const trackEvaluationSubmit = useCallback((isPassed: boolean) => {
@@ -216,6 +236,7 @@ export function useDiagram() {
     setSelectedRelation,
     // Ekspos metrik analitik & tracker agar bisa ditarik oleh Workspace utama
     diagramMetrics,
-    trackEvaluationSubmit
+    trackEvaluationSubmit,
+    clearHistoricalIdleTime
   };
 }

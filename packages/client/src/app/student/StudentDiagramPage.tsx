@@ -15,7 +15,13 @@ import { useWorkspace } from "@/hooks/useWorkspace";
 import { randomUUID } from "crypto";
 
 export default function StudentDiagramPage() {
-    const [gradeResult, setGradeResult] = useState<{ score: number, feedbacks: string[], isPassed: boolean } | null>(null);
+    const [gradeResult, setGradeResult] = useState<{
+        score: number,
+        feedbacks: string[],
+        isPassed: boolean,
+        studentCategory: string,
+        reason: string,
+    } | null>(null);
     const [stage, setStage] = useState<1 | 2 | 3>(3);
     const [studyCase, setStudyCase] = useState<any>(null);
     const [loading, setLoading] = useState(true);
@@ -23,6 +29,7 @@ export default function StudentDiagramPage() {
     const [nim, setNim] = useState("");
     const [timeElapsed, setTimeElapsed] = useState(0);
     const [isTimerRunning, setIsTimerRunning] = useState(false);
+    const [studentCategory, setStudentCategory] = useState<string>("");
 
     // Multiple tabs UI state
     const [activeTab, setActiveTab] = useState<"diagram" | "code">("diagram");
@@ -251,24 +258,69 @@ export default function StudentDiagramPage() {
     };
 
     const handleSubmit = async () => {
-        const studentData = diagramRef.current?.getSnapshot();
-        if (!studentData || !nim) return alert("Isi NIM dan lengkapi diagram!");
-        console.log('studyCaseId', studyCase.answer_key.exercise_id);
+        if (!diagramRef.current) return;
+
+        // 1. Ambil snapshot metrik dan struktur UML dari ref canvas
+        const currentMetrics = diagramRef.current.getMetrics();
+        const snapshotUML = diagramRef.current.getSnapshot();
+
+        // 2. Force increment lokal untuk submit_count agar data ke backend tidak telat
+        const updatedMetricsForBackend = {
+            ...currentMetrics,
+            evaluation: {
+                submit_count: (currentMetrics?.evaluation?.submit_count || 0) + 1,
+                mismatch_attempts: currentMetrics?.evaluation?.mismatch_attempts || 0
+            }
+        };
+
+        if (!snapshotUML || !nim) return alert("Isi NIM dan lengkapi diagram!");
+
         setIsSubmitting(true);
         try {
-            const result = await graderDiagram(nim, studyCase.answer_key.exercise_id, studentData.nodes, studentData.edges, diagramRef.current?.getMetrics());
+            // 3. Tembak fungsi API Grader bawaan kamu
+            const result = await graderDiagram(
+                "90289652-6cf9-41a2-a106-ec1783c5146e", // Sesuai user_id valid kamu
+                studyCase.answer_key.exercise_id,
+                snapshotUML.nodes,
+                snapshotUML.edges,
+                updatedMetricsForBackend
+            );
 
-            if (result.success) {
-                console.log("result", result);
+            console.log("Grader result:", result);
 
+            if (result && result.success) {
+                // 4. Sinkronisasikan balik jumlah attempt/mismatch ke state internal hook useDiagram
+                // Ini agar counter internal di hook tahu status kelulusan submisi ini
+                diagramRef.current.logSubmitResult(result.isPassed);
 
-                if (result.isCorrect) {
-                    setIsIdeUnlocked(true); // Membuka akses ke editor Java
+                // 5. MECHANISM RESET TIMEOUT UNTUK STOPPERS (Fading Trigger)
+                if (result.scaffolding?.shouldResetIdle) {
+                    diagramRef.current.clearHistoricalIdleTime?.();
+                    console.log("Historical idle time trap flushed successfully.");
+                }
+
+                // Munculkan modal hasil evaluasi
+                setGradeResult({
+                    score: result.score / 100, // Normalized to 0-1
+                    feedbacks: result.hints || [],
+                    reason: result.scaffolding.reason || "",
+                    isPassed: result.isPassed,
+                    studentCategory: result.analytics.category,
+                });
+
+                // 6. ADAPTIVE UI TRIGGER (Bahan analisis Bab 4 skripsi kamu)
+                if (result.isPassed) {
+                    setIsIdeUnlocked(true);
+                } else {
+                    // Kondisikan tampilan UI berdasarkan level bantuan yang diberikan oleh server
+                    console.log(`Mahasiswa diarahkan ke Scaffolding Level: ${result.scaffolding?.level}`);
+                    if (result.scaffolding?.level) {
+                        setStage(result.scaffolding.level as 1 | 2 | 3);
+                        setShowScaffolding(true);
+                        if (result.scaffolding.level === 1) triggerStage1Injection();
+                    }
                 }
             }
-
-            // Simpan ke Supabase (tanpa error handling agar UI tetap responsif)
-
 
         } catch (error) {
             console.error("Error grading:", error);
@@ -327,9 +379,15 @@ export default function StudentDiagramPage() {
                     className="w-full p-3 mb-4 bg-slate-800 rounded-xl border border-slate-700 text-white outline-none focus:ring-1 focus:ring-blue-500"
                 />
 
-                <button onClick={handleSubmit} disabled={isSubmitting} className="w-full py-3 bg-green-600 rounded-xl font-bold">
-                    {isSubmitting ? "Grading..." : "Submit Answer"}
-                </button>
+                {activeTab === "diagram" ? (
+                    <button onClick={handleSubmit} disabled={isSubmitting} className="w-full py-3 bg-green-600 rounded-xl font-bold">
+                        {isSubmitting ? "Grading..." : "Submit Diagram"}
+                    </button>
+                ) : (
+                    <button onClick={() => alert("IDE submission and scaffolding are not yet implemented.")} className="w-full py-3 bg-green-600 rounded-xl font-bold">
+                        Submit Code
+                    </button>
+                )}
 
                 <div className="mt-auto pt-6 border-t border-slate-800">
                     <p className="text-[10px] text-slate-500 uppercase mb-3">Support Stage</p>
@@ -482,6 +540,7 @@ export default function StudentDiagramPage() {
                     activeTab={activeTab}
                     answerKey={studyCase?.answer_key}
                     diagramRef={diagramRef}
+                    feedbacks={gradeResult?.feedbacks || []}
                     onClose={() => setShowScaffolding(false)}
                 />
             )}
@@ -496,21 +555,14 @@ export default function StudentDiagramPage() {
                             <p className="text-slate-400 uppercase tracking-widest text-xs font-bold">
                                 {gradeResult.isPassed ? 'Excellent! Task Completed' : 'Keep Going! Almost There'}
                             </p>
+                            <p className="text-slate-400 uppercase tracking-widest text-xs font-bold">
+                                Kategori: {gradeResult.studentCategory}
+                            </p>
                         </div>
 
                         <div className="bg-slate-800/50 rounded-2xl p-4 mb-6 max-h-48 overflow-y-auto border border-slate-700/50">
                             <h4 className="text-white text-xs font-bold mb-3 uppercase opacity-50">Kekurangan Diagram:</h4>
-                            <ul className="space-y-2">
-                                {gradeResult.feedbacks.length > 0 ? (
-                                    gradeResult.feedbacks.map((f, i) => (
-                                        <li key={i} className="text-[13px] text-slate-300 flex gap-2">
-                                            <span className="text-orange-500">•</span> {f}
-                                        </li>
-                                    ))
-                                ) : (
-                                    <li className="text-green-400 text-sm">Semua sudah sesuai!</li>
-                                )}
-                            </ul>
+                            <p className="text-white text-xs">{gradeResult.reason}</p>
                         </div>
 
                         {gradeResult.isPassed ? (
