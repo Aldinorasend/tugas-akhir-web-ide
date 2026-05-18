@@ -2,7 +2,7 @@
   "name": "pathwise-server",
   "version": "1.0.0",
   "scripts": {
-    "dev": "nodemon server.js"
+    "dev": "nodemon src/app.js"
   },
   "keywords": [],
   "author": "",
