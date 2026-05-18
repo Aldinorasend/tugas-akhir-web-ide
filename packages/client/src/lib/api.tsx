@@ -1,4 +1,4 @@
-export const API_URL = "/api";
+export const API_URL = process.env.NEXT_PUBLIC_SUPABASE_URL || 'http://localhost:5000';
 
 export const getAllStudyCases = async () => {
     const response = await fetch(`${API_URL}/study-cases`, {
