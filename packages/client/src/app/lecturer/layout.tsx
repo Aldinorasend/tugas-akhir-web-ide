@@ -19,7 +19,7 @@ export default function LecturerLayout({
   useEffect(() => {
     const token = localStorage.getItem("token");
     const storedUser = localStorage.getItem("user");
-    
+
     if (!token || !storedUser) {
       router.push("/login");
       return;
@@ -83,7 +83,7 @@ export default function LecturerLayout({
           <div className="bg-rose-500/10 p-4 rounded-2xl w-fit mx-auto mb-6 text-rose-400 border border-rose-500/20">
             <ShieldAlert size={40} className="animate-bounce" />
           </div>
-          
+
           <h2 className="text-2xl font-black tracking-tight mb-3">Akses Ditolak</h2>
           <p className="text-slate-400 text-xs leading-relaxed mb-8">
             Akun Anda terdaftar dengan role <span className="text-blue-400 font-mono font-bold">Student</span>. Halaman portal ini hanya diperuntukkan bagi dosen atau pengajar (<span className="text-orange-400 font-mono font-bold">Lecturer</span>).
@@ -96,7 +96,7 @@ export default function LecturerLayout({
             >
               Buka Portal Mahasiswa <ArrowRight size={14} />
             </button>
-            
+
             <button
               onClick={handleLogout}
               className="w-full py-3 bg-slate-950 hover:bg-slate-800 border border-slate-800 text-slate-400 hover:text-white text-xs font-bold uppercase tracking-widest rounded-xl transition-all"
@@ -144,10 +144,8 @@ export default function LecturerLayout({
         </nav>
 
         <div className="flex flex-col gap-6">
-          <button className="p-3 text-slate-500 hover:text-slate-300 transition-colors">
-            <Settings className="w-6 h-6" />
-          </button>
-          <button 
+
+          <button
             onClick={handleLogout}
             className="p-3 text-slate-500 hover:text-red-400 transition-colors"
           >
