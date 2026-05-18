@@ -661,9 +661,9 @@ export default function StudentDiagramPage({ isNonScaffolding = false }: { isNon
                                             onCodeChange={handleCodeChangeWithMetrics}
                                             onRun={handleRun}
                                         />
-                                        <OutputPanel
+                                        {/* <OutputPanel
                                             output={output}
-                                        />
+                                        /> */}
                                     </div>
                                 ) : (
                                     <div className="flex-1 flex flex-col items-center justify-center text-slate-500 gap-3 bg-[#141414]">
