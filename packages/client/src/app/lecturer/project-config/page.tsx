@@ -5,7 +5,7 @@ import JavaEditor from "@/components/JavaEditor";
 import ProjectExplorer, { FileNode } from "@/components/ProjectExplorer";
 import OutputPanel from "@/components/OutputPanel";
 import { supabase } from "@/lib/supabase";
-import { ChevronLeft, Save, Sparkles, FolderCode, FileJson, CheckCircle2, CloudLightning } from "lucide-react";
+import { ChevronLeft, Save, Code2, FolderCode, FileJson, CheckCircle2, CloudLightning } from "lucide-react";
 
 export default function ProjectConfigPage() {
   const [nodes, setNodes] = useState<FileNode[]>([]);
@@ -531,7 +531,7 @@ export default function ProjectConfigPage() {
           ) : (
             <div className="flex-1 flex flex-col items-center justify-center text-slate-500 gap-3 border-l border-white/5 bg-[#141414]">
               <div className="p-4 bg-white/5 rounded-full border border-white/10">
-                <Sparkles className="w-8 h-8 text-slate-400" />
+                <Code2 className="w-8 h-8 text-slate-400" />
               </div>
               <h3 className="text-sm font-bold text-slate-300">Starter Code Sandbox</h3>
               <p className="text-xs max-w-sm text-center leading-relaxed text-slate-500">

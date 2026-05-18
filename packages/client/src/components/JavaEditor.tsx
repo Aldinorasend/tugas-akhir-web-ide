@@ -2,7 +2,7 @@
 
 import React from "react";
 import Editor from "@monaco-editor/react";
-import { Play, FileCode, CheckCircle2 } from "lucide-react";
+import { Play, FileCode } from "lucide-react";
 
 interface JavaEditorProps {
   code: string;
@@ -24,10 +24,6 @@ export default function JavaEditor({ code, fileName, onCodeChange, onRun }: Java
         </div>
         
         <div className="flex items-center gap-3">
-          <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-green-500/10 text-green-400 text-xs font-semibold border border-green-500/20">
-            <CheckCircle2 size={12} />
-            <span>Synced</span>
-          </div>
           <button
             className="group flex items-center gap-2 bg-gradient-to-r from-orange-600 to-orange-500 hover:from-orange-500 hover:to-orange-400 text-white px-5 py-1.5 rounded-lg text-sm font-bold shadow-lg shadow-orange-900/20 transition-all active:scale-95"
             onClick={onRun}

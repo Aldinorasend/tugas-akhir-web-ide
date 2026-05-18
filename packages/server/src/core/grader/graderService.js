@@ -1,8 +1,9 @@
 import { supabase } from "../../config/supabase.js";
 import { compareDiagrams } from "./ruleEngine.js";
 
-export const gradeStudentDiagram = async (exerciseId, studentNodes, studentEdges, timeElapsed) => {
+export const gradeStudentDiagram = async (exerciseId, studentNodes, studentEdges, diagramMetrics) => {
     try {
+        const timeElapsed = diagramMetrics.timeToCompletion;
         // Ambil rule dari tabel 'diagram_rules'
         const { data: rules, error } = await supabase
             .from('diagram_rules')

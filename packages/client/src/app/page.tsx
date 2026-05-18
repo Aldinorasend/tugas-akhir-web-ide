@@ -40,7 +40,7 @@ export default function LandingPage() {
           whileTap={{ scale: 0.98 }}
           className="group"
         >
-          <Link href="/student">
+          <Link href="/student/select">
             <div className="h-full p-8 bg-slate-800/50 backdrop-blur-xl border border-slate-700 rounded-3xl transition-all group-hover:border-blue-500/50 group-hover:bg-slate-800/80 shadow-2xl relative overflow-hidden">
               <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
                 <Code size={120} />

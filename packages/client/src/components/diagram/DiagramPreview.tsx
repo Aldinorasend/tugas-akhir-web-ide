@@ -38,7 +38,7 @@ function DiagramInner({ nodes, edges }: DiagramPreviewProps) {
         elementsSelectable={false}
         style={{ background: "transparent" }}
       >
-        <Background color="#334155" gap={30} variant={BackgroundVariant.Dots} />
+        <Background color="#1e293b" gap={24} variant={BackgroundVariant.Lines} />
         <Controls 
           showInteractive={false}
           className="bg-slate-900 border border-slate-700 rounded-lg overflow-hidden"

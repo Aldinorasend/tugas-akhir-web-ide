@@ -1,4 +1,4 @@
-const API_URL = "http://localhost:4000/api";
+export const API_URL = "http://localhost:4000/api";
 
 export const getAllStudyCases = async () => {
     const response = await fetch(`${API_URL}/study-cases`, {
@@ -82,13 +82,19 @@ export const deleteStudyCase = async (id: string) => {
     return response.json();
 };
 
-export const graderDiagram = async (exerciseId: string, nodes: any[], edges: any[], timeElapsed?: number) => {
-    const response = await fetch(`${API_URL}/projects/grade-diagram`, {
+const getAuthHeaders = () => {
+    const token = typeof window !== 'undefined' ? localStorage.getItem("token") : null;
+    return {
+        'Content-Type': 'application/json',
+        ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+    };
+};
+
+export const graderDiagram = async (user_id: string, exerciseId: string, nodes: any[], edges: any[], diagramMetrics: any, experiment_group: string = "CONTROL") => {
+    const response = await fetch(`${API_URL}/grader/grade-diagram`, {
         method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ exerciseId, nodes, edges, timeElapsed }),
+        headers: getAuthHeaders(),
+        body: JSON.stringify({ user_id, exerciseId, nodes, edges, diagramMetrics, experiment_group }),
     });
     if (!response.ok) {
         throw new Error('Gagal menilai diagram');
@@ -100,16 +106,22 @@ interface JavaFile {
     path: string;
     content: string;
 }
-export const graderCode = async (current_code: JavaFile[], logic_rules: string[]) => {
-    const response = await fetch(`${API_URL}/projects/compare-code`, {
+
+
+export const compareCode = async (
+    user_id: string,
+    exerciseId: string,
+    current_code: JavaFile[],
+    codeMetrics: any,
+    logic_rules: string[],
+    experiment_group: string = "CONTROL"
+) => {
+    const response = await fetch(`${API_URL}/grader/compare-code`, {
         method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-        },
-        // Pastikan nama properti di sini sama dengan di server
-        body: JSON.stringify({ current_code, logic_rules }), 
+        headers: getAuthHeaders(),
+        body: JSON.stringify({ user_id, exerciseId, current_code, codeMetrics, logic_rules, experiment_group }),
     });
-    
+
     if (!response.ok) {
         throw new Error('Gagal menilai kode');
     }
