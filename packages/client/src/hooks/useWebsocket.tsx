@@ -52,7 +52,7 @@ export const useSocket = (url: string = "ws://localhost:4000") => {
     }, [url]);
 
     useEffect(() => {
-        connect(); // Panggil koneksi saat pertama kali mount
+        // connect(); // Panggil koneksi saat pertama kali mount (DISABLED DULU)
 
         return () => {
             if (socketRef.current) {
