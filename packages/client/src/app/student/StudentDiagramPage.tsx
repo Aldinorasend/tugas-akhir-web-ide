@@ -564,17 +564,12 @@ export default function StudentDiagramPage({ isNonScaffolding = false }: { isNon
                     <p className="text-[10px] text-slate-500 uppercase mb-3">Support Stage</p>
                     <div className="grid grid-cols-3 gap-2">
                         {[3, 2, 1].map((lvl) => (
-                            <button
+                            <div
                                 key={lvl}
-                                onClick={() => {
-                                    setStage(lvl as any);
-                                    setShowScaffolding(true);
-                                    if (lvl === 1) triggerStage1Injection();
-                                }}
-                                className={`py-2 rounded-lg text-xs font-bold transition-all ${stage === lvl ? 'bg-blue-600 text-white' : 'bg-slate-800 text-slate-500'}`}
+                                className={`py-2 rounded-lg text-xs font-bold transition-all text-center cursor-default ${stage === lvl ? 'bg-blue-600 text-white' : 'bg-slate-800/40 text-slate-500 border border-slate-800'}`}
                             >
                                 L{lvl}
-                            </button>
+                            </div>
                         ))}
                     </div>
                 </div>
