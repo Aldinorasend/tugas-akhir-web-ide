@@ -23,6 +23,7 @@ export default function StudentDiagramPage({ isNonScaffolding = false }: { isNon
         isPassed: boolean,
         studentCategory: string,
         reason: string,
+        submissionType?: "diagram" | "code",
     } | null>(null);
     const [stage, setStage] = useState<1 | 2 | 3>(3);
     const [studyCase, setStudyCase] = useState<any>(null);
@@ -32,10 +33,30 @@ export default function StudentDiagramPage({ isNonScaffolding = false }: { isNon
     const [timeElapsed, setTimeElapsed] = useState(0);
     const [isTimerRunning, setIsTimerRunning] = useState(false);
     const [studentCategory, setStudentCategory] = useState<string>("");
+    const [alertModal, setAlertModal] = useState<{
+        isOpen: boolean;
+        title: string;
+        message: string;
+        type: "success" | "error" | "info" | "warning";
+    }>({
+        isOpen: false,
+        title: "",
+        message: "",
+        type: "info",
+    });
+
+    const showAlert = (message: string, type: "success" | "error" | "info" | "warning" = "info", title: string = "Notifikasi") => {
+        setAlertModal({
+            isOpen: true,
+            title,
+            message,
+            type,
+        });
+    };
 
     // Multiple tabs UI state
     const [activeTab, setActiveTab] = useState<"diagram" | "code">("diagram");
-    const [isIdeUnlocked, setIsIdeUnlocked] = useState(true);
+    const [isIdeUnlocked, setIsIdeUnlocked] = useState(false);
     const [showScaffolding, setShowScaffolding] = useState(false);
 
     // Coding Phase Analytics Metrics state
@@ -264,7 +285,7 @@ export default function StudentDiagramPage({ isNonScaffolding = false }: { isNon
                     setIDEStarterFiles(actualData);
                     const params = new URLSearchParams(window.location.search);
                     params.set("id", actualData.id);
-                    window.history.pushState(null, "", `?${params.toString()}`);
+                    window.history.replaceState(null, "", `?${params.toString()}`);
                 }
             }
         } catch (err) {
@@ -297,11 +318,11 @@ export default function StudentDiagramPage({ isNonScaffolding = false }: { isNon
 
                 const params = new URLSearchParams(window.location.search);
                 params.set("id", actualData.id);
-                window.history.pushState(null, "", `?${params.toString()}`);
+                window.history.replaceState(null, "", `?${params.toString()}`);
             }
         } catch (err) {
             console.error("Failed to randomize case", err);
-            alert("Gagal mengambil study case acak.");
+            showAlert("Gagal mengambil study case acak.", "error", "Gagal");
         } finally {
             setLoading(false);
             setTimeElapsed(0);
@@ -365,7 +386,10 @@ export default function StudentDiagramPage({ isNonScaffolding = false }: { isNon
             }
         };
 
-        if (!snapshotUML || !nim) return alert("Isi NIM dan lengkapi diagram!");
+        if (!snapshotUML || !nim) {
+            showAlert("Isi NIM dan lengkapi diagram terlebih dahulu!", "warning", "Peringatan");
+            return;
+        }
 
         setIsSubmitting(true);
         try {
@@ -399,12 +423,17 @@ export default function StudentDiagramPage({ isNonScaffolding = false }: { isNon
                     reason: result.scaffolding.reason || "",
                     isPassed: result.isPassed,
                     studentCategory: result.analytics.category,
+                    submissionType: "diagram",
                 });
 
                 // 6. ADAPTIVE UI TRIGGER (Bahan analisis Bab 4 skripsi kamu)
                 if (result.isPassed) {
                     setIsIdeUnlocked(true);
                 } else {
+                    setIsIdeUnlocked(false);
+                    if (activeTab === "code") {
+                        setActiveTab("diagram");
+                    }
                     // Kondisikan tampilan UI berdasarkan level bantuan yang diberikan oleh server
                     console.log(`Mahasiswa diarahkan ke Scaffolding Level: ${result.scaffolding?.level}`);
                     if (result.scaffolding?.level) {
@@ -417,7 +446,7 @@ export default function StudentDiagramPage({ isNonScaffolding = false }: { isNon
 
         } catch (error) {
             console.error("Error grading:", error);
-            alert("Gagal mengirim jawaban. Coba lagi.");
+            showAlert("Gagal mengirim jawaban. Silakan coba beberapa saat lagi.", "error", "Gagal");
         } finally {
             setIsSubmitting(false);
         }
@@ -426,7 +455,10 @@ export default function StudentDiagramPage({ isNonScaffolding = false }: { isNon
     const handleSubmitCode = async () => {
         const allFiles = flattenFiles(nodes).filter(file => file.path.endsWith('.java'));
 
-        if (allFiles.length === 0) return alert("Tidak ada kode Java!");
+        if (allFiles.length === 0) {
+            showAlert("Tidak ada kode Java yang akan dikirim!", "warning", "Peringatan");
+            return;
+        }
 
         // Force increment submit_count
         const updatedMetrics = {
@@ -478,11 +510,10 @@ export default function StudentDiagramPage({ isNonScaffolding = false }: { isNon
                     reason: result.scaffolding?.reason || "",
                     isPassed: result.isPassed,
                     studentCategory: result.analytics?.category || "",
+                    submissionType: "code",
                 });
 
-                if (result.isPassed) {
-                    alert("Selamat! Kode Java Anda berhasil 100% lolos verifikasi logika kelas!");
-                } else {
+                if (!result.isPassed) {
                     console.log(`Mahasiswa diarahkan ke Scaffolding Level Koding: ${result.scaffolding?.level}`);
                     if (result.scaffolding?.level) {
                         setStage(result.scaffolding.level as 1 | 2 | 3);
@@ -492,7 +523,7 @@ export default function StudentDiagramPage({ isNonScaffolding = false }: { isNon
             }
         } catch (error: any) {
             console.error("Test Matcher Error:", error);
-            alert("Gagal mengirim kode Java. Coba lagi.");
+            showAlert("Gagal mengirim kode Java. Silakan coba beberapa saat lagi.", "error", "Gagal");
         } finally {
             setIsSubmitting(false);
         }
@@ -702,11 +733,17 @@ export default function StudentDiagramPage({ isNonScaffolding = false }: { isNon
                                 {(gradeResult.score * 100).toFixed(0)}%
                             </div>
                             <p className="text-slate-400 uppercase tracking-widest text-xs font-bold">
-                                {gradeResult.isPassed ? 'Excellent! Task Completed' : 'Keep Going! Almost There'}
+                                {gradeResult.submissionType === "code" && gradeResult.isPassed
+                                    ? "Excellent! Latihan Selesai 🎉"
+                                    : gradeResult.isPassed
+                                        ? "Excellent! Task Completed"
+                                        : "Keep Going! Almost There"}
                             </p>
-                            <p className="text-slate-400 uppercase tracking-widest text-xs font-bold">
-                                Kategori: {gradeResult.studentCategory}
-                            </p>
+                            {!(gradeResult.submissionType === "code" && gradeResult.isPassed) && (
+                                <p className="text-slate-400 uppercase tracking-widest text-xs font-bold mt-1">
+                                    Kategori: {gradeResult.studentCategory}
+                                </p>
+                            )}
                         </div>
 
                         <div className="bg-slate-800/50 rounded-2xl p-4 mb-6 max-h-48 overflow-y-auto border border-slate-700/50 text-left">
@@ -715,16 +752,26 @@ export default function StudentDiagramPage({ isNonScaffolding = false }: { isNon
                         </div>
 
                         {gradeResult.isPassed ? (
-                            <button
-                                onClick={() => {
-                                    setGradeResult(null);
-                                    setActiveTab("code");
-                                }}
-                                className="w-full py-4 bg-gradient-to-r from-emerald-500 to-green-600 hover:from-emerald-400 hover:to-green-500 text-white rounded-2xl font-black text-sm uppercase tracking-wider transition-all shadow-xl shadow-green-500/20 flex items-center justify-center gap-2"
-                            >
-                                <Unlock className="w-4 h-4 animate-bounce" />
-                                <span>Unlock & Start Coding</span>
-                            </button>
+                            gradeResult.submissionType === "code" ? (
+                                <button
+                                    onClick={() => router.push("/student")}
+                                    className="w-full py-4 bg-gradient-to-r from-emerald-500 to-green-600 hover:from-emerald-400 hover:to-green-500 text-white rounded-2xl font-black text-sm uppercase tracking-wider transition-all shadow-xl shadow-green-500/20 flex items-center justify-center gap-2"
+                                >
+                                    <span>Selesai kembali ke menu utama</span>
+
+                                </button>
+                            ) : (
+                                <button
+                                    onClick={() => {
+                                        setGradeResult(null);
+                                        setActiveTab("code");
+                                    }}
+                                    className="w-full py-4 bg-gradient-to-r from-emerald-500 to-green-600 hover:from-emerald-400 hover:to-green-500 text-white rounded-2xl font-black text-sm uppercase tracking-wider transition-all shadow-xl shadow-green-500/20 flex items-center justify-center gap-2"
+                                >
+                                    <Unlock className="w-4 h-4 animate-bounce" />
+                                    <span>Unlock & Start Coding</span>
+                                </button>
+                            )
                         ) : (
                             <div className="grid grid-cols-2 gap-3">
                                 <button
@@ -741,6 +788,53 @@ export default function StudentDiagramPage({ isNonScaffolding = false }: { isNon
                                 </button>
                             </div>
                         )}
+                    </div>
+                </div>
+            )}
+
+            {alertModal.isOpen && (
+                <div className="fixed inset-0 z-[1000] flex items-center justify-center bg-black/80 backdrop-blur-md p-4 animate-in fade-in duration-200">
+                    <div className="w-full max-w-sm bg-slate-900 border border-slate-700/60 rounded-3xl p-6 shadow-2xl animate-in zoom-in-95 duration-200 flex flex-col items-center text-center">
+                        <div className={`w-14 h-14 rounded-full flex items-center justify-center mb-4 ${alertModal.type === "success" ? "bg-emerald-500/10 text-emerald-400 border border-emerald-500/20" :
+                            alertModal.type === "error" ? "bg-rose-500/10 text-rose-400 border border-rose-500/20" :
+                                alertModal.type === "warning" ? "bg-amber-500/10 text-amber-400 border border-amber-500/20" :
+                                    "bg-blue-500/10 text-blue-400 border border-blue-500/20"
+                            }`}>
+                            {alertModal.type === "success" && (
+                                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M5 13l4 4L19 7" />
+                                </svg>
+                            )}
+                            {alertModal.type === "error" && (
+                                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M6 18L18 6M6 6l12 12" />
+                                </svg>
+                            )}
+                            {alertModal.type === "warning" && (
+                                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                                </svg>
+                            )}
+                            {alertModal.type === "info" && (
+                                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                </svg>
+                            )}
+                        </div>
+
+                        <h3 className="text-white font-black text-lg mb-2">{alertModal.title}</h3>
+                        <p className="text-slate-400 text-sm mb-6 max-w-xs leading-relaxed">{alertModal.message}</p>
+
+                        <button
+                            onClick={() => setAlertModal(prev => ({ ...prev, isOpen: false }))}
+                            className={`w-full py-3 font-bold text-sm uppercase tracking-wider rounded-xl transition-all active:scale-95 ${alertModal.type === "success" ? "bg-emerald-600 hover:bg-emerald-500 text-white shadow-lg shadow-emerald-600/20" :
+                                alertModal.type === "error" ? "bg-rose-600 hover:bg-rose-500 text-white shadow-lg shadow-rose-600/20" :
+                                    alertModal.type === "warning" ? "bg-amber-600 hover:bg-amber-500 text-white shadow-lg shadow-amber-600/20" :
+                                        "bg-blue-600 hover:bg-blue-500 text-white shadow-lg shadow-blue-600/20"
+                                }`}
+                        >
+                            Oke
+                        </button>
                     </div>
                 </div>
             )}

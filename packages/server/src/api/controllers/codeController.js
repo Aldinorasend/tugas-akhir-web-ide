@@ -111,6 +111,7 @@ export const gradeAndCompareCode = async (req, res) => {
                 scaffolding_level: decision.scaffolding.level, // 1, 2, atau 3
                 trigger_reason: decision.scaffolding.reason,
                 hint_message: decision.scaffolding.hint || "Periksa kembali aturan konseptual diagram pada kode Anda.",
+                current_score: Math.round(finalOverallScore * 100),
                 experiment_group: activeGroup
             });
 

@@ -1,4 +1,4 @@
-export const API_URL = "https://pathwise-api.vercel.app/api";
+export const API_URL = process.env.NEXT_PUBLIC_API_URL;
 
 export const getAllStudyCases = async () => {
     const response = await fetch(`${API_URL}/study-cases`, {

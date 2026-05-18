@@ -247,6 +247,24 @@ const extractTypeDeclaration = (
       ?.children?.Identifier?.[0]
       ?.image || null;
 
+  /**
+   * IMPLEMENTS
+   */
+  const implementedInterfaces = [];
+  const classImplementsNode = classDecl?.children?.classImplements?.[0];
+  if (classImplementsNode) {
+    const interfaceTypeList = classImplementsNode.children?.interfaceTypeList?.[0];
+    if (interfaceTypeList) {
+      const interfaceTypes = interfaceTypeList.children?.interfaceType || [];
+      interfaceTypes.forEach((it) => {
+        const identifier = it.children?.classType?.[0]?.children?.Identifier?.[0]?.image;
+        if (identifier) {
+          implementedInterfaces.push(identifier);
+        }
+      });
+    }
+  }
+
   const attributes = [];
   const methods = [];
   const constructors = [];
@@ -346,13 +364,14 @@ const extractTypeDeclaration = (
     isInterface,
     isAbstract,
     superClass,
+    implementedInterfaces,
     attributes,
     methods,
     constructors,
   };
 };
 
-/**
+/** 
  * =================================
  * ANALYZE FILE
  * =================================
@@ -459,6 +478,11 @@ const validateRule = (
     case "extends":
       return (
         target.superClass === p2
+      );
+
+    case "implements":
+      return (
+        target.implementedInterfaces?.includes(p2) || false
       );
 
     case "attribute":

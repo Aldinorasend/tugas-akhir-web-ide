@@ -108,6 +108,7 @@ export const gradeAndLogDiagram = async (req, res) => {
                 scaffolding_level: decision.scaffolding.level, 
                 trigger_reason: decision.scaffolding.reason,
                 hint_message: gradeResult.feedbacks[0] || "Periksa kembali rancangan diagram Anda.",
+                current_score: gradeResult.finalGrade,
                 experiment_group: activeGroup
             });
 

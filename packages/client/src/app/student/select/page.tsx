@@ -28,8 +28,8 @@ export default function StudentRouteSelection() {
     <div className="min-h-screen bg-[#0f172a] text-slate-200 flex flex-col items-center justify-center p-6 font-sans">
       <div className="w-full max-w-3xl">
         <div className="flex justify-between items-center w-full mb-8">
-          <Link 
-            href="/" 
+          <Link
+            href="/"
             className="text-xs font-semibold text-slate-500 hover:text-slate-300 transition-colors"
           >
             ← Kembali ke Beranda
@@ -43,7 +43,7 @@ export default function StudentRouteSelection() {
             </button>
           )}
         </div>
-        
+
         <div className="text-center mb-8">
           {user && (
             <p className="text-blue-400 text-xs font-semibold mb-1">
@@ -60,7 +60,7 @@ export default function StudentRouteSelection() {
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           {/* Route 1: Adaptive Scaffolding (Experimental Group) */}
-          <Link href="/student" className="block group">
+          <Link href="/student/scaffolding" className="block group">
             <div className="h-full p-6 bg-slate-900 border border-slate-800 rounded-lg hover:border-slate-700 transition-all flex flex-col justify-between hover:bg-slate-900/80">
               <div>
                 <h2 className="text-lg font-bold text-white mb-1">
@@ -73,7 +73,7 @@ export default function StudentRouteSelection() {
                   Belajar dengan bantuan dukungan scaffolding adaptif yang memandu secara interaktif (Stage 1-3) berdasarkan deteksi kategori pengerjaan Anda.
                 </p>
               </div>
-              
+
               <div className="mt-6 text-xs font-semibold text-blue-400 group-hover:underline">
                 Masuk Mode Eksperimen →
               </div>
