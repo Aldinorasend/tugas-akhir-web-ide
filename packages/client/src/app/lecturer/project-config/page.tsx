@@ -99,16 +99,16 @@ export default function ProjectConfigPage() {
 
     const filesToSend = flattenFiles(nodes);
 
-    const currentDirPath = selectedId.includes("/") 
-      ? selectedId.split("/").slice(0, -1).join("/") 
+    const currentDirPath = selectedId.includes("/")
+      ? selectedId.split("/").slice(0, -1).join("/")
       : "";
 
     let mainFile = filesToSend.find(f => f.path === (currentDirPath ? `${currentDirPath}/Main.java` : "Main.java"));
-    
+
     if (!mainFile) {
       mainFile = filesToSend.find(f => f.path.endsWith("Main.java"));
     }
-    
+
     let mainClass = "Main";
     if (mainFile) {
       mainClass = mainFile.path
@@ -333,9 +333,9 @@ export default function ProjectConfigPage() {
           const oldIdParts = node.id.split("/");
           oldIdParts[oldIdParts.length - 1] = newName;
           const newId = oldIdParts.join("/");
-          
+
           let updatedNode = { ...node, id: newId, name: newName };
-          
+
           if (node.type === "folder" && node.children) {
             const updateChildIds = (childrenList: FileNode[], parentPath: string): FileNode[] => {
               return childrenList.map((child) => {
@@ -352,10 +352,10 @@ export default function ProjectConfigPage() {
             };
             updatedNode.children = updateChildIds(node.children, newId);
           }
-          
+
           return updatedNode;
         }
-        
+
         if (node.children) {
           return { ...node, children: updateNodes(node.children) };
         }
@@ -365,7 +365,7 @@ export default function ProjectConfigPage() {
 
     setNodes((prevNodes) => {
       const nextNodes = updateNodes(prevNodes);
-      
+
       const nodeExists = (list: FileNode[], id: string): boolean => {
         for (const n of list) {
           if (n.id === id) return true;
@@ -373,7 +373,7 @@ export default function ProjectConfigPage() {
         }
         return false;
       };
-      
+
       if (selectedId && !nodeExists(nextNodes, selectedId)) {
         const findFirstFile = (tree: FileNode[]): FileNode | null => {
           for (const n of tree) {
@@ -388,7 +388,7 @@ export default function ProjectConfigPage() {
         const f = findFirstFile(nextNodes);
         if (f) setSelectedId(f.id);
       }
-      
+
       return nextNodes;
     });
   };
@@ -523,10 +523,10 @@ export default function ProjectConfigPage() {
                 onCodeChange={handleCodeChange}
                 onRun={runCode}
               />
-              <OutputPanel
+              {/* <OutputPanel
                 output={output}
                 onClear={() => setOutput("")}
-              />
+              /> */}
             </div>
           ) : (
             <div className="flex-1 flex flex-col items-center justify-center text-slate-500 gap-3 border-l border-white/5 bg-[#141414]">

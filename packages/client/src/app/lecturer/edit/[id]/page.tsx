@@ -6,26 +6,54 @@ import { getStudyCaseById, updateStudyCase } from "@/lib/api"
 
 import { useEffect, useRef, useState, useCallback } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { Edit3, Info, ChevronRight, Save, Loader2, ArrowLeft, Code, Code2, Terminal } from "lucide-react";
+import { Edit3, Info, ChevronRight, Save, Loader2, ArrowLeft, Code, Code2, Terminal, CheckCircle2, XCircle, AlertTriangle, X } from "lucide-react";
 import ProjectExplorer, { FileNode } from "@/components/ProjectExplorer";
 import JavaEditor from "@/components/JavaEditor";
 import OutputPanel from "@/components/OutputPanel";
 import { useSocket } from "@/hooks/useWebsocket";
 import { useWorkspace } from "@/hooks/useWorkspace";
+import { div } from "framer-motion/client";
 
 export default function EditStudyCasePage() {
   const { id } = useParams();
   const router = useRouter();
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
-  const [category, setCategory] = useState("inheritance");
-  const [passThreshold, setPassThreshold] = useState(0.7);
   const diagramRef = useRef<DiagramCanvasRef>(null);
   const [loading, setLoading] = useState(true);
   const [updating, setUpdating] = useState(false);
   const [status, setStatus] = useState("");
   const [activeTab, setActiveTab] = useState<"diagram" | "code">("diagram");
   const [initial_code, setInitialCode] = useState("");
+
+  // Popup Modal State
+  const [modal, setModal] = useState<{
+    isOpen: boolean;
+    title: string;
+    message: string;
+    type: "success" | "error" | "warning";
+    onClose?: () => void;
+  }>({
+    isOpen: false,
+    title: "",
+    message: "",
+    type: "success",
+  });
+
+  const showModal = (
+    title: string,
+    message: string,
+    type: "success" | "error" | "warning",
+    onClose?: () => void
+  ) => {
+    setModal({
+      isOpen: true,
+      title,
+      message,
+      type,
+      onClose,
+    });
+  };
   // Shared Workspace Hook
   const {
     nodes,
@@ -55,8 +83,6 @@ export default function EditStudyCasePage() {
         if (response && response.data) {
           setTitle(response.data.title || "");
           setDescription(response.data.description || "");
-          setCategory(response.data.category || "inheritance");
-          setPassThreshold(response.data.pass_threshold !== undefined && response.data.pass_threshold !== null ? response.data.pass_threshold : 0.7);
 
           if (response.data.initial_code) {
             try {
@@ -108,8 +134,12 @@ export default function EditStudyCasePage() {
           }, 500);
         }
       } catch (err: unknown) {
-        alert("Error fetching study case: " + (err as Error).message);
-        router.push("/lecturer");
+        showModal(
+          "Error Fetching",
+          "Error fetching study case: " + (err as Error).message,
+          "error",
+          () => router.push("/lecturer")
+        );
       } finally {
         setLoading(false);
       }
@@ -128,7 +158,11 @@ export default function EditStudyCasePage() {
 
       if (!snapshot || snapshot.nodes.length === 0) {
         setUpdating(false);
-        return alert("Wait! Your diagram is empty.");
+        return showModal(
+          "Diagram Empty",
+          "Wait! Your diagram is empty.",
+          "warning"
+        );
       }
 
       const initialCodeValue = JSON.stringify(nodes);
@@ -137,22 +171,31 @@ export default function EditStudyCasePage() {
       const response = await updateStudyCase(id as string, {
         title,
         description,
-        category,
         initial_code: initialCodeValue,
-        // is_active: status === "true",
-        // pass_threshold: passThreshold,
         nodes: snapshot.nodes,
         edges: snapshot.edges,
       });
       if (response.status === "ok" || response.success) {
-        alert("Success! Study Case and Answer Key are updated.");
-        router.push("/lecturer");
+        showModal(
+          "Success",
+          "Success! Study Case and Answer Key are updated.",
+          "success",
+          () => router.push("/lecturer")
+        );
       } else {
-        alert("Updating failed: " + (response.error || "Unknown server error."));
+        showModal(
+          "Update Failed",
+          "Updating failed: " + (response.error || "Unknown server error."),
+          "error"
+        );
       }
     } catch (err: any) {
       console.error("Failed Update Study Case", err);
-      alert("Failed Update Study Case: " + err.message);
+      showModal(
+        "Update Failed",
+        "Failed Update Study Case: " + err.message,
+        "error"
+      );
     } finally {
       setUpdating(false);
     }
@@ -185,9 +228,9 @@ export default function EditStudyCasePage() {
           <p className="text-slate-500 text-xs font-medium uppercase tracking-widest">Update the scenario and answer key.</p>
         </div>
 
-        <div className="space-y-6 flex-1">
+        <div className="space-y-4 flex-1 ">
           <div>
-            <label className="block text-[10px] font-black text-slate-500 uppercase tracking-widest mb-2 px-1 flex items-center gap-2">
+            <label className=" text-[10px] font-black text-slate-500 uppercase tracking-widest mb-2 px-1 flex items-center gap-2">
               <ChevronRight className="w-3 h-3" /> Case Title
             </label>
             <input
@@ -199,21 +242,7 @@ export default function EditStudyCasePage() {
             />
           </div>
 
-          <div>
-            <label className="block text-[10px] font-black text-slate-500 uppercase tracking-widest mb-2 px-1 flex items-center gap-2">
-              <ChevronRight className="w-3 h-3" /> Category / OOP Type
-            </label>
-            <select
-              value={category}
-              onChange={(e) => setCategory(e.target.value)}
-              className="w-full p-3 bg-slate-800/50 border border-slate-700 rounded-xl outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500/50 transition-all text-sm text-slate-300 shadow-inner cursor-pointer"
-            >
-              <option value="inheritance">Inheritance</option>
-              <option value="polymorphism">Polymorphism</option>
-              <option value="encapsulation">Encapsulation</option>
-              <option value="abstraction">Abstraction</option>
-            </select>
-          </div>
+
 
           <div>
             <label className="block text-[10px] font-black text-slate-500 uppercase tracking-widest mb-2 px-1 flex items-center gap-2">
@@ -228,23 +257,7 @@ export default function EditStudyCasePage() {
             />
           </div>
 
-          <div>
-            <label className="block text-[10px] font-black text-slate-500 uppercase tracking-widest mb-2 px-1 flex items-center gap-2">
-              <ChevronRight className="w-3 h-3" /> UML Matching Threshold ({(passThreshold * 100).toFixed(0)}%)
-            </label>
-            <div className="flex items-center gap-4 bg-slate-800/50 border border-slate-700 rounded-xl p-3 shadow-inner">
-              <input
-                type="range"
-                min="0.1"
-                max="1.0"
-                step="0.05"
-                value={passThreshold}
-                onChange={(e) => setPassThreshold(parseFloat(e.target.value))}
-                className="flex-1 h-1 bg-slate-700 rounded-lg appearance-none cursor-pointer accent-blue-500"
-              />
-              <span className="text-xs font-bold text-white shrink-0">{(passThreshold * 100).toFixed(0)}% Match</span>
-            </div>
-          </div>
+
 
           <div className="bg-slate-800/40 border border-slate-700/60 rounded-2xl p-5 flex flex-col gap-4 shadow-xl">
             <div className="flex justify-between items-center">
@@ -273,19 +286,6 @@ export default function EditStudyCasePage() {
             </button>
           </div>
 
-          <div>
-            <label className="block text-[10px] font-black text-slate-500 uppercase tracking-widest mb-2 px-1 flex items-center gap-2">
-              <ChevronRight className="w-3 h-3" /> Status
-            </label>
-            <select
-              value={status}
-              onChange={(e) => setStatus(e.target.value)}
-              className="w-full p-3 bg-slate-800/50 border border-slate-700 rounded-xl outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500/50 transition-all text-sm text-slate-300 placeholder:text-slate-600 shadow-inner"
-            >
-              <option value="true">Active</option>
-              <option value="false">Inactive</option>
-            </select>
-          </div>
 
           <div className="bg-blue-500/5 p-5 rounded-2xl border border-dashed border-blue-500/20 flex gap-3">
             <Info className="w-5 h-5 text-blue-400 shrink-0" />
@@ -339,19 +339,7 @@ export default function EditStudyCasePage() {
             </button>
           </div>
 
-          <div>
-            {activeTab === "diagram" ? (
-              <div className="bg-blue-500/10 text-blue-400 border border-blue-500/10 px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-widest flex items-center gap-1.5 shadow-md">
-                <div className="w-1.5 h-1.5 rounded-full bg-blue-500 animate-pulse" />
-                Editing Answer Key
-              </div>
-            ) : (
-              <div className="bg-orange-500/10 text-orange-400 border border-orange-500/10 px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-widest flex items-center gap-1.5 shadow-md">
-                <div className="w-1.5 h-1.5 rounded-full bg-orange-500 animate-pulse" />
-                Configuring Starter Buggy Code
-              </div>
-            )}
-          </div>
+
         </div>
 
         {/* Workspace Content */}
@@ -381,9 +369,9 @@ export default function EditStudyCasePage() {
                     onCodeChange={handleCodeChange}
                     onRun={handleRun}
                   />
-                  <OutputPanel
+                  {/* <OutputPanel
                     output={output}
-                  />
+                  /> */}
                 </div>
               ) : (
                 <div className="flex-1 flex flex-col items-center justify-center text-slate-500 gap-3 bg-[#141414]">
@@ -399,7 +387,66 @@ export default function EditStudyCasePage() {
             </div>
           </div>
         </div>
-      </div>
+    </div>
+
+      {modal.isOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
+          <div className="bg-[#0f172a] border border-slate-800 rounded-2xl w-full max-w-md p-6 shadow-2xl relative">
+            <button
+              onClick={() => {
+                setModal((prev) => ({ ...prev, isOpen: false }));
+                if (modal.onClose) modal.onClose();
+              }}
+              className="absolute top-4 right-4 text-slate-500 hover:text-white transition-colors"
+            >
+              <X className="w-5 h-5" />
+            </button>
+
+            <div className="flex flex-col items-center text-center gap-4 mt-2">
+              {modal.type === "success" && (
+                <div className="p-3 bg-green-500/10 border border-green-500/20 rounded-full">
+                  <CheckCircle2 className="w-8 h-8 text-green-500" />
+                </div>
+              )}
+              {modal.type === "error" && (
+                <div className="p-3 bg-red-500/10 border border-red-500/20 rounded-full">
+                  <XCircle className="w-8 h-8 text-red-500" />
+                </div>
+              )}
+              {modal.type === "warning" && (
+                <div className="p-3 bg-amber-500/10 border border-amber-500/20 rounded-full">
+                  <AlertTriangle className="w-8 h-8 text-amber-500" />
+                </div>
+              )}
+
+              <div className="space-y-2">
+                <h3 className="text-lg font-bold text-white tracking-tight">
+                  {modal.title}
+                </h3>
+                <p className="text-sm text-slate-400 leading-relaxed px-4">
+                  {modal.message}
+                </p>
+              </div>
+
+              <button
+                onClick={() => {
+                  setModal((prev) => ({ ...prev, isOpen: false }));
+                  if (modal.onClose) modal.onClose();
+                }}
+                className={`mt-4 px-6 py-2.5 rounded-xl font-bold text-sm transition-all shadow-lg ${
+                  modal.type === "success"
+                    ? "bg-green-600 hover:bg-green-500 text-white shadow-green-600/10"
+                    : modal.type === "error"
+                    ? "bg-red-600 hover:bg-red-500 text-white shadow-red-600/10"
+                    : "bg-amber-600 hover:bg-amber-500 text-white shadow-amber-600/10"
+                }`}
+              >
+                Continue
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
