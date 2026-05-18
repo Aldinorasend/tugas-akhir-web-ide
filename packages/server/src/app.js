@@ -11,12 +11,24 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
-// Nanti route REST API masuk ke sini
+// Route REST API
 app.use('/api/auth', authRoutes);
 app.use('/api/study-cases', studyCaseRoutes);
 app.use('/api/grader', graderRules);
 
-// Setup HTTP Server untuk digabungkan dengan Websocket
-const httpServer = createServer(app);
+// =================================================================
+// PENYESUAIAN SERVERLESS VERCEL
+// =================================================================
 
-export { app, httpServer };
+// Jika di lokal (development), kita tetap buat httpServer untuk listen port
+if (process.env.NODE_ENV !== 'production') {
+    const PORT = process.env.PORT || 4000;
+    const httpServer = createServer(app);
+    
+    httpServer.listen(PORT, () => {
+        console.log(`[Lokal] Server Pathwise berjalan di port ${PORT}`);
+    });
+}
+
+// WAJIB: Export default app agar Vercel Serverless bisa mengeksekusi routing-nya
+export default app;
