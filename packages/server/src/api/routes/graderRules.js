@@ -33,9 +33,10 @@
 import express from "express";
 import { gradeAndLogDiagram } from "../controllers/diagramController.js";
 import { gradeAndCompareCode } from "../controllers/codeController.js";
+import { authenticateToken } from "../middleware/authMiddleware.js";
 const router = express.Router();
 
-router.post('/grade-diagram', gradeAndLogDiagram);
-router.post('/compare-code', gradeAndCompareCode);
+router.post('/grade-diagram', authenticateToken, gradeAndLogDiagram);
+router.post('/compare-code', authenticateToken, gradeAndCompareCode);
 
 export default router;

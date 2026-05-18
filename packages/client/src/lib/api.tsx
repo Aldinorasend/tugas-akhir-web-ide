@@ -82,12 +82,18 @@ export const deleteStudyCase = async (id: string) => {
     return response.json();
 };
 
+const getAuthHeaders = () => {
+    const token = typeof window !== 'undefined' ? localStorage.getItem("token") : null;
+    return {
+        'Content-Type': 'application/json',
+        ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+    };
+};
+
 export const graderDiagram = async (user_id: string, exerciseId: string, nodes: any[], edges: any[], diagramMetrics: any, experiment_group: string = "CONTROL") => {
     const response = await fetch(`${API_URL}/grader/grade-diagram`, {
         method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-        },
+        headers: getAuthHeaders(),
         body: JSON.stringify({ user_id, exerciseId, nodes, edges, diagramMetrics, experiment_group }),
     });
     if (!response.ok) {
@@ -112,9 +118,7 @@ export const compareCode = async (
 ) => {
     const response = await fetch(`${API_URL}/grader/compare-code`, {
         method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-        },
+        headers: getAuthHeaders(),
         body: JSON.stringify({ user_id, exerciseId, current_code, codeMetrics, logic_rules, experiment_group }),
     });
 

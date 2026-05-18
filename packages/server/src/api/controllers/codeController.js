@@ -5,7 +5,8 @@ import { evaluateCodeScaffolding } from "../../core/scaffolding/code-scaffolding
 // Handler Utama Endpoint HTTP POST /api/grader/compare-code
 export const gradeAndCompareCode = async (req, res) => {
     try {
-        const { user_id, exerciseId, current_code, codeMetrics, logic_rules, experiment_group } = req.body;
+        const { exerciseId, current_code, codeMetrics, logic_rules, experiment_group } = req.body;
+        const user_id = req.user?.id;
         const activeGroup = (experiment_group || req.body.experimentGroup || "CONTROL").toUpperCase();
 
         // 1. Validasi input parameter dasar dari request body
@@ -13,14 +14,18 @@ export const gradeAndCompareCode = async (req, res) => {
             return res.status(400).json({ success: false, error: "Missing required parameters: current_code or logic_rules" });
         }
 
-        // Resolusi user_id aman: pastikan format UUID valid untuk mencegah database crash
-        let actualUserId = user_id;
-        const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(user_id);
-        if (!isUUID || !user_id) {
-            actualUserId = "90289652-6cf9-41a2-a106-ec1783c5146e"; // Test profile uuid fallback
+        // Validasi UUID untuk user_id dan exerciseId
+        const isUUID = (uuid) => /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(uuid);
+        
+        if (!user_id || !isUUID(user_id)) {
+            return res.status(401).json({ success: false, error: "Unauthorized: Missing or invalid user session ID" });
+        }
+        if (!exerciseId || !isUUID(exerciseId)) {
+            return res.status(400).json({ success: false, error: "Missing or invalid exerciseId UUID" });
         }
 
-        const actualExerciseId = exerciseId || "a132ecb7-f867-4c74-b293-6bf552f0accd"; 
+        const actualUserId = user_id;
+        const actualExerciseId = exerciseId; 
 
         // 2. Evaluasi menggunakan AST java-analyzer
         const compareResult = compareCodeWithLogic(current_code, logic_rules);

@@ -371,7 +371,7 @@ export default function StudentDiagramPage({ isNonScaffolding = false }: { isNon
         try {
             // 3. Tembak fungsi API Grader bawaan kamu
             const result = await graderDiagram(
-                user?.id || "90289652-6cf9-41a2-a106-ec1783c5146e", // Menggunakan user_id dari sesi login
+                user?.id || "",
                 studyCase.answer_key.exercise_id,
                 snapshotUML.nodes,
                 snapshotUML.edges,
@@ -442,7 +442,7 @@ export default function StudentDiagramPage({ isNonScaffolding = false }: { isNon
         setIsSubmitting(true);
         try {
             const result = await compareCode(
-                user?.id || "90289652-6cf9-41a2-a106-ec1783c5146e", // Menggunakan user_id dari sesi login
+                user?.id || "",
                 studyCase.id || studyCase.answer_key.exercise_id,
                 allFiles,
                 updatedMetrics,

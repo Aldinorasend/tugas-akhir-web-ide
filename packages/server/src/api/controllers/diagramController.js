@@ -4,8 +4,17 @@ import { evaluateDiagramScaffolding } from "../../core/scaffolding/diagram-scaff
 
 export const gradeAndLogDiagram = async (req, res) => {
     try {
-        const { user_id, exerciseId, nodes, edges, diagramMetrics, experiment_group } = req.body;
+        const { exerciseId, nodes, edges, diagramMetrics, experiment_group } = req.body;
+        const user_id = req.user?.id;
         const activeGroup = (experiment_group || req.body.experimentGroup || "CONTROL").toUpperCase();
+
+        const isUUID = (uuid) => /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(uuid);
+        if (!user_id || !isUUID(user_id)) {
+            return res.status(401).json({ success: false, error: "Unauthorized: Missing or invalid user session ID" });
+        }
+        if (!exerciseId || !isUUID(exerciseId)) {
+            return res.status(400).json({ success: false, error: "Missing or invalid exerciseId UUID" });
+        }
 
         // 1. Ambil ground truth rules dari dosen di database
         const { data: rules, error: ruleError } = await supabase
