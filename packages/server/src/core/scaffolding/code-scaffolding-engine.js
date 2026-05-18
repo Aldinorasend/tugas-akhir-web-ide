@@ -1,110 +1,385 @@
-const detectCodeCategory = (metrics) => {
-    const timeSpent = metrics.temporal?.time_spent_ms || 0;
-    const idleTime = metrics.temporal?.idle_time_ms || 0;
-    const maxSingleIdle = metrics.temporal?.max_single_idle_ms || 0;
-    const keystrokeCount = metrics.spatial_textual?.keystroke_count || 0;
-    
-    // REFACTOR UTAMA: Menggunakan check_count (Verifikasi AST/Kunci Jawaban)
-    // karena mahasiswa jarang melakukan run kompilasi mentah akibat sudah dipandu UML
-    const checkCount = metrics.evaluation?.submit_count || 0; 
+const detectCodeCategory = (metrics, graderResults = []) => {
+    const { temporal, spatial_textual, spatial_churn, evaluation } = metrics || {};
 
-    if (timeSpent === 0) return "TINKERERS";
+    const timeSpent = temporal?.time_spent_ms || 0;
+    const idleTime = temporal?.idle_time_ms || 0;
+    const maxSingleIdle = temporal?.max_single_idle_ms || 0;
 
-    // Kalkulasi Rasio Menggunakan Pengecekan Validasi
-    const hesitationRatio = idleTime / timeSpent;
+    const keystrokeCount = spatial_textual?.keystroke_count || 0;
+
+    const totalActions = spatial_churn?.total_actions || 0;
+    const deleteCount = spatial_churn?.delete_count || 0;
+
+    const submitCount = evaluation?.submit_count || 0;
+    const mismatchAttempts = evaluation?.mismatch_attempts || 0;
+
+    if (timeSpent === 0) {
+        return "TINKERERS";
+    }
+
+    // ==========================================
+    // DERIVED METRICS
+    // ==========================================
+
+    const hesitationRatio =
+        timeSpent > 0 ? idleTime / timeSpent : 0;
+
+    const churnRatio =
+        totalActions > 0 ? deleteCount / totalActions : 0;
+
     const timeSpentMinutes = timeSpent / 60000;
-    const checkVelocity = timeSpentMinutes > 0 ? checkCount / timeSpentMinutes : 0;
 
-    // 1. KONDISI MOVERS (Spamming Tombol Validasi/Check Jawaban)
-    // Mahasiswa melakukan submit verifikasi jawaban >= 3 kali dengan tempo agresif
-    if (checkCount >= 3 && checkVelocity >= 1.5) {
+    const submitVelocity =
+        timeSpentMinutes > 0
+            ? submitCount / timeSpentMinutes
+            : 0;
+
+    const mismatchRatio =
+        submitCount > 0
+            ? mismatchAttempts / submitCount
+            : 0;
+
+    // ==========================================
+    // 1. MOVERS
+    // Rapid semantic checking / gaming tendency
+    // ==========================================
+
+    if (
+        submitCount >= 5 &&
+        submitVelocity >= 1.2 &&
+        mismatchRatio >= 0.7
+    ) {
         return "MOVERS";
     }
 
-    // 2. KONDISI STOPPERS (Macet / Mengalami Kebuntuan Konseptual pasca-Check)
-    if (maxSingleIdle > 420000) {
-        return "STOPPERS";
-    }
-    // Jika melamun lama setelah tahu kodenya salah, dan ketikannya minim
-    if (hesitationRatio > 0.55 && keystrokeCount < 100) {
+    // ==========================================
+    // 2. STOPPERS
+    // Passive stuck / disengagement
+    // ==========================================
+
+    if (
+        keystrokeCount < 80 &&
+        (
+            hesitationRatio > 0.65 ||
+            maxSingleIdle > 420000
+        )
+    ) {
         return "STOPPERS";
     }
 
-    // 3. KONDISI DEFAULT TINKERERS
+    // ==========================================
+    // 3. DEFAULT
+    // Healthy / reflective exploration
+    // ==========================================
+
     return "TINKERERS";
 };
 
-export const evaluateCodeScaffolding = (graderResults, codeMetrics) => {
+export const evaluateCodeScaffolding = (
+    graderResults,
+    codeMetrics,
+    parsedClasses = []
+) => {
+
     const totalRules = graderResults.length;
-    const mismatchRules = graderResults.filter(r => r.status === "MISMATCH").length;
-    const codeErrorRatio = totalRules > 0 ? mismatchRules / totalRules : 0;
 
-    const studentCategory = detectCodeCategory(codeMetrics);
+    const mismatchRules =
+        graderResults.filter(
+            r => r.status === "MISMATCH"
+        ).length;
 
-    const { spatial_churn, temporal, evaluation } = codeMetrics || {};
-    const maxSingleIdle = temporal?.max_single_idle_ms || 0;
+    const codeErrorRatio =
+        totalRules > 0
+            ? mismatchRules / totalRules
+            : 0;
 
-    const totalDeletes = spatial_churn?.delete_count || 0;
-    const churnRatio = spatial_churn?.total_actions > 0 ? totalDeletes / spatial_churn.total_actions : 0;
-    const hesitationRatio = temporal?.time_spent_ms > 0 ? temporal.idle_time_ms / temporal.time_spent_ms : 0;
+    const studentCategory =
+        detectCodeCategory(
+            codeMetrics,
+            graderResults
+        );
 
-    const frustrationIndex = (churnRatio * 0.4) + (hesitationRatio * 0.4) + (Math.min((evaluation?.mismatch_attempts || 0) * 0.15, 0.2));
+    const {
+        temporal,
+        spatial_churn,
+        evaluation,
+        spatial_textual
+    } = codeMetrics || {};
+
+    // ==========================================
+    // METRICS
+    // ==========================================
+
+    const timeSpent =
+        temporal?.time_spent_ms || 0;
+
+    const idleTime =
+        temporal?.idle_time_ms || 0;
+
+    const hesitationRatio =
+        timeSpent > 0
+            ? idleTime / timeSpent
+            : 0;
+
+    const totalActions =
+        spatial_churn?.total_actions || 0;
+
+    const deleteCount =
+        spatial_churn?.delete_count || 0;
+
+    const churnRatio =
+        totalActions > 0
+            ? deleteCount / totalActions
+            : 0;
+
+    const submitCount =
+        evaluation?.submit_count || 0;
+
+    const mismatchAttempts =
+        evaluation?.mismatch_attempts || 0;
+
+    const keystrokeCount =
+        spatial_textual?.keystroke_count || 0;
+
+    // ==========================================
+    // FRUSTRATION INDEX
+    // ==========================================
+
+    const frustrationIndex =
+        (
+            churnRatio * 0.3
+        ) +
+        (
+            hesitationRatio * 0.2
+        ) +
+        (
+            Math.min(
+                mismatchAttempts * 0.1,
+                0.5
+            )
+        );
+
+    // ==========================================
+    // SCAFFOLD DECISION
+    // ==========================================
 
     let givenLevel = 3;
     let triggerReason = "";
     let hintMessage = "";
 
+    // ==========================================
+    // STOPPERS
+    // ==========================================
+
     if (studentCategory === "STOPPERS") {
-        if (maxSingleIdle > 420000) {
-            givenLevel = 3; // R-SCA-06: Afektif jika diam > 7 menit
-            triggerReason = "Tidak ada aksi penulisan kode > 7 menit. Diberikan dukungan afektif L3.";
-            hintMessage = "Menghadapi error Java OOP adalah bagian alami dari proses belajar seorang engineer. Jangan berkecil hati, mari coba perbaiki dari error baris terkecil terlebih dahulu.";
-        } else {
-            givenLevel = 1; // R-SCA-04: Kognitif jika buntu teknis
-            triggerReason = "Mengalami mismatch + hesitation tinggi pada penulisan kode. Diberikan bantuan kognitif L1.";
-            hintMessage = "Kode Anda berhasil dikompilasi, namun implementasi method belum memenuhi cetak biru diagram. Periksa kembali tipe data kembalian (return type) method tersebut.";
-        }
-    } else if (studentCategory === "MOVERS") {
-        if (frustrationIndex > 0.5) {
-            givenLevel = 2; // R-SCA-05: Metakognitif untuk memutus brute-forcing
-            triggerReason = "Mahasiswa terindikasi trial-and-error membabi buta (Movers). Diberikan petunjuk metakognitif L2.";
-            hintMessage = "Aksi kompilasi Anda ditangguhkan sementara. Mari berpikir sejenak: Apa tujuan Anda memodifikasi kata kunci super pada konstruktor tersebut? Tuliskan rencana perbaikan Anda.";
-        } else {
-            givenLevel = 3;
-            triggerReason = "Mahasiswa melakukan iterasi cepat tanpa indikasi frustrasi tinggi. Diberikan dorongan afektif L3.";
-            hintMessage = "Kerja bagus! Struktur implementasi kode Anda sejauh ini selaras dengan rancangan kelas.";
-        }
-    } else if (studentCategory === "TINKERERS") {
-        if (codeErrorRatio > 0.3 && hesitationRatio > 0.35 ) {
-            // HANYA berikan Level 3 Afirmasi jika kodenya MEMANG BENAR/LULUS
+
+        givenLevel = 3;
+
+        triggerReason =
+            "Mahasiswa terindikasi mengalami stagnasi interaksi dan penghentian progres sementara.";
+
+        hintMessage =
+            "Tidak apa-apa jika implementasi OOP terasa membingungkan. Coba fokuskan perhatian pada satu class terlebih dahulu sebelum melanjutkan ke relasi inheritance atau interface.";
+
+    }
+
+    // ==========================================
+    // MOVERS
+    // ==========================================
+
+    else if (studentCategory === "MOVERS") {
+
+        givenLevel = 2;
+
+        triggerReason =
+            "Mahasiswa menunjukkan kecenderungan semantic checking berulang tanpa refleksi konseptual mendalam.";
+
+        hintMessage =
+            "Coba hentikan percobaan validasi sesaat. Telaah kembali apakah relasi inheritance, abstract class, atau interface pada kode Anda sudah benar-benar sesuai dengan diagram UML.";
+
+    }
+
+    // ==========================================
+    // TINKERERS
+    // ==========================================
+
+    else if (studentCategory === "TINKERERS") {
+
+        // --------------------------------------
+        // STRUGGLING TINKERERS
+        // Active but conceptually struggling
+        // --------------------------------------
+
+        if (
+            codeErrorRatio > 0.3 &&
+            mismatchAttempts >= 3
+        ) {
+
             givenLevel = 2;
-            hintMessage = "Aksi kompilasi Anda ditangguhkan sementara. Mari berpikir sejenak: Apa tujuan Anda memodifikasi kata kunci super pada konstruktor tersebut? Tuliskan rencana perbaikan Anda.";
-        } else {
-            // JIKA kodenya masih salah (mismatch AST), berikan Level 1 (Kognitif) 
-            // agar mahasiswa terbantu secara teknis/konseptual, bukan dicuekin pake L3 terus!
+
+            triggerReason =
+                "Mahasiswa aktif melakukan eksplorasi solusi, namun masih mengalami miskonsepsi implementasi OOP.";
+
+            hintMessage =
+                "Perhatikan kembali implementasi method dan hubungan antarkelas. Apakah seluruh method yang dideklarasikan sudah memiliki body yang valid? Apakah penggunaan extends dan implements sudah sesuai konteks?";
+
+        }
+
+        // --------------------------------------
+        // HEALTHY TINKERERS
+        // --------------------------------------
+
+        else {
+
             givenLevel = 3;
-            hintMessage = "Kerja bagus! Struktur implementasi kode Anda sejauh ini selaras dengan rancangan kelas.";
+
+            triggerReason =
+                "Mahasiswa menunjukkan pola eksplorasi solusi yang stabil dan progresif.";
+
+            hintMessage =
+                "Progres implementasi Anda sudah berada pada jalur yang baik. Lanjutkan pengecekan detail kecil seperti return type, modifier, dan konsistensi struktur class.";
+
         }
     }
 
+    // Calculate OOP Quality checks
+    const oopMetrics = calculateOopMetrics(parsedClasses);
+
     return {
         success: true,
+
         matrix: {
-            codeErrorRatio: codeErrorRatio,
-            hesitationRatio: hesitationRatio,
-            churnRatio: churnRatio,
+            codeErrorRatio,
+            hesitationRatio,
+            churnRatio,
         },
+
         analytics: {
             category: studentCategory,
-            frustrationIndex: parseFloat(Math.min(frustrationIndex, 1).toFixed(2)),
-            errorRatio: parseFloat(codeErrorRatio.toFixed(2)),
+
+            frustrationIndex:
+                parseFloat(
+                    Math.min(frustrationIndex, 1)
+                        .toFixed(2)
+                ),
+
+            errorRatio:
+                parseFloat(
+                    codeErrorRatio.toFixed(2)
+                ),
         },
+
+        oopMetrics,
+
         scaffolding: {
             level: givenLevel,
             reason: triggerReason,
             hint: hintMessage,
-            shouldResetIdle: studentCategory === "STOPPERS"
+            shouldResetIdle:
+                studentCategory === "STOPPERS"
         },
-        isPassed: mismatchRules === 0
+
+        isPassed:
+            mismatchRules === 0 && oopMetrics.overallOop === 100
+    };
+};
+
+const calculateOopMetrics = (classes) => {
+    if (!classes || !Array.isArray(classes) || classes.length === 0) {
+        return {
+            encapsulation: 100,
+            inheritance: 100,
+            overallOop: 100,
+            checks: []
+        };
+    }
+
+    let totalPrivateAttributes = 0;
+    let matchingGettersAndSetters = 0;
+
+    let totalSubclasses = 0;
+    let subclassesWithSuperCall = 0;
+
+    const checks = [];
+
+    classes.forEach((c) => {
+        // 1. Encapsulation: Check private attributes and their getters/setters
+        c.attributes.forEach((attr) => {
+            if (attr.access === "private") {
+                totalPrivateAttributes++;
+
+                const capName = attr.name.charAt(0).toUpperCase() + attr.name.slice(1);
+                const getterName1 = "get" + capName;
+                const getterName2 = "is" + capName; // boolean getter standard
+                const setterName = "set" + capName;
+
+                const hasGetter = c.methods.some(
+                    (m) =>
+                        (m.name === getterName1 || (attr.type === "boolean" && m.name === getterName2)) &&
+                        m.returnType.toLowerCase() === attr.type.toLowerCase() &&
+                        m.access === "public"
+                );
+
+                const hasSetter = c.methods.some(
+                    (m) =>
+                        m.name === setterName &&
+                        m.returnType === "void" &&
+                        m.access === "public"
+                );
+
+                if (hasGetter) matchingGettersAndSetters++;
+                if (hasSetter) matchingGettersAndSetters++;
+
+                if (hasGetter && hasSetter) {
+                    checks.push({
+                        status: "MATCH",
+                        message: `[Enkapsulasi] Atribut private '${attr.name}' pada kelas '${c.name}' telah memiliki public getter dan setter lengkap.`
+                    });
+                } else {
+                    const missingParts = [];
+                    if (!hasGetter) missingParts.push("getter");
+                    if (!hasSetter) missingParts.push("setter");
+                    checks.push({
+                        status: "MISMATCH",
+                        message: `[Enkapsulasi] Atribut private '${attr.name}' pada kelas '${c.name}' belum memiliki public ${missingParts.join(" dan ")} yang sesuai.`
+                    });
+                }
+            }
+        });
+
+        // 2. Inheritance: Check if subclass constructor calls super(...)
+        if (c.superClass) {
+            totalSubclasses++;
+            const hasSuperCall = c.constructors?.some((cons) => cons.hasSuperCall) || false;
+            if (hasSuperCall) {
+                subclassesWithSuperCall++;
+                checks.push({
+                    status: "MATCH",
+                    message: `[Pewarisan] Kelas anak '${c.name}' memanggil konstruktor parent 'super(...)' dengan benar.`
+                });
+            } else {
+                checks.push({
+                    status: "MISMATCH",
+                    message: `[Pewarisan] Kelas anak '${c.name}' belum memanggil konstruktor parent 'super(...)' di dalam konstruktornya.`
+                });
+            }
+        }
+    });
+
+    const encapsulationScore = totalPrivateAttributes > 0
+        ? Math.round((matchingGettersAndSetters / (totalPrivateAttributes * 2)) * 100)
+        : 100;
+
+    const inheritanceScore = totalSubclasses > 0
+        ? Math.round((subclassesWithSuperCall / totalSubclasses) * 100)
+        : 100;
+
+    const overallOop = Math.round((encapsulationScore * 0.5) + (inheritanceScore * 0.5));
+
+    return {
+        encapsulation: encapsulationScore,
+        inheritance: inheritanceScore,
+        overallOop,
+        checks
     };
 };

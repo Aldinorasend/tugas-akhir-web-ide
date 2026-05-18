@@ -165,6 +165,21 @@ const extractMethod = (methodDecl) => {
   };
 };
 
+const extractConstructor = (constructorDecl) => {
+  if (!constructorDecl) return null;
+  const explicitConstructorInvocation =
+    constructorDecl?.children?.constructorBody?.[0]?.children?.explicitConstructorInvocation?.[0];
+
+  const hasSuperCall =
+    !!explicitConstructorInvocation?.children?.Super ||
+    JSON.stringify(constructorDecl).includes('"image":"super"') ||
+    JSON.stringify(constructorDecl).includes('"super"');
+
+  return {
+    hasSuperCall
+  };
+};
+
 /**
  * =================================
  * TYPE DECLARATION EXTRACTOR
@@ -234,6 +249,7 @@ const extractTypeDeclaration = (
 
   const attributes = [];
   const methods = [];
+  const constructors = [];
 
   /**
    * =================================
@@ -248,6 +264,18 @@ const extractTypeDeclaration = (
         ?.classBodyDeclaration || [];
 
     bodyDeclarations.forEach((body) => {
+      // Extract constructor if present
+      const constructorDecl =
+        body?.children
+          ?.constructorDeclaration?.[0];
+
+      if (constructorDecl) {
+        const constructor = extractConstructor(constructorDecl);
+        if (constructor) {
+          constructors.push(constructor);
+        }
+      }
+
       const member =
         body?.children
           ?.classMemberDeclaration?.[0];
@@ -320,6 +348,7 @@ const extractTypeDeclaration = (
     superClass,
     attributes,
     methods,
+    constructors,
   };
 };
 

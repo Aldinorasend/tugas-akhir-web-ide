@@ -35,7 +35,11 @@ export const gradeAndCompareCode = async (req, res) => {
 
         // 4. Transformasikan hasil untuk dievaluasi oleh scaffolding engine
         // Pastikan fungsi ini mengembalikan data bertipe koding (syntax_error, dsb)
-        const decision = evaluateCodeScaffolding(compareResult.results, codeMetrics);
+        const decision = evaluateCodeScaffolding(compareResult.results, codeMetrics, compareResult.classes);
+
+        // 4b. Hitung composite score: Gabungkan UML match score (70%) dengan efektivitas OOP (30%)
+        const oopScoreDecimal = decision.oopMetrics ? decision.oopMetrics.overallOop / 100 : 1.0;
+        const finalOverallScore = (dynamicScore * 0.7) + (oopScoreDecimal * 0.3);
 
         // Ekstraksi metrik temporal dan spasial dari payload FE
         const { temporal, spatial_textual, evaluation } = codeMetrics || {};
@@ -110,11 +114,18 @@ export const gradeAndCompareCode = async (req, res) => {
         // 7. Format umpan balik sebagai list string feedback untuk kompatibilitas UI
         const feedbacks = compareResult.results?.map(r => `${r.status === "MATCH" ? "✅" : "❌"} ${r.rule || r.message}`) || [];
 
+        // 7.1. Tambahkan hasil analisis efektivitas OOP ke list hints/feedbacks
+        if (decision.oopMetrics && Array.isArray(decision.oopMetrics.checks)) {
+            decision.oopMetrics.checks.forEach(c => {
+                feedbacks.push(`${c.status === "MATCH" ? "✅" : "❌"} ${c.message}`);
+            });
+        }
+
         // 8. Berikan respon adaptif ke Frontend Next.js
         return res.json({
             success: true,
-            isPassed: decision.isPassed,
-            score: dynamicScore,
+            isPassed: decision.isPassed && finalOverallScore >= 1.0,
+            score: finalOverallScore,
             hints: feedbacks, // Berisi detail visual centang/silang tiap rule untuk dirender di modal
             analytics: {
                 category: decision.analytics.category,

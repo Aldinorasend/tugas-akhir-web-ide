@@ -376,6 +376,21 @@ export default function ScaffoldingPanel({ stage, activeTab, answerKey, diagramR
                   </div>
                 )}
 
+                {/* OOP Best Practice Reminder */}
+                <div className="bg-slate-900/50 p-4 rounded-xl border border-slate-800/80 space-y-3">
+                  <h3 className="text-xs font-semibold text-slate-200 flex items-center gap-1.5">
+                    💡 Refleksi Rancangan OOP:
+                  </h3>
+                  <div className="space-y-2.5 text-xs text-slate-300 leading-relaxed">
+                    <p>
+                      • Jika Anda memiliki atribut dengan modifier akses <code className="text-blue-300 font-mono text-[10px]">private</code>, mekanisme standar apa dalam pemrograman berorientasi objek yang sebaiknya disediakan agar kelas luar tetap dapat mengakses atau mengubah nilainya secara aman?
+                    </p>
+                    <p>
+                      • Apabila sebuah kelas bertindak sebagai anak/turunan dari kelas induk (<code className="text-purple-300 font-mono text-[10px]">extends</code>), bagaimana cara kelas anak memastikan inisialisasi awal variabel milik kelas induk berjalan dengan tepat di dalam konstruktornya?
+                    </p>
+                  </div>
+                </div>
+
                 <section className="bg-slate-900/50 p-4 rounded-xl border border-slate-800 space-y-2">
                   <h3 className="text-xs font-semibold text-slate-300">
                     Checklist Metakognitif Koding:

@@ -455,7 +455,13 @@ export default function StudentDiagramPage({ isNonScaffolding = false }: { isNon
                 // Update internal metrics matching
                 setCodeMetrics(prev => ({
                     ...prev,
-
+                    evaluation: {
+                        submit_count: (prev.evaluation?.submit_count || 0) + 1,
+                        mismatch_attempts: result.isPassed
+                            ? (prev.evaluation?.mismatch_attempts || 0)
+                            : (prev.evaluation?.mismatch_attempts || 0) + 1,
+                        run_count: prev.evaluation?.run_count || 0
+                    }
                 }));
 
                 // Reset timeout trapping for Stoppers
@@ -708,9 +714,9 @@ export default function StudentDiagramPage({ isNonScaffolding = false }: { isNon
                             </p>
                         </div>
 
-                        <div className="bg-slate-800/50 rounded-2xl p-4 mb-6 max-h-48 overflow-y-auto border border-slate-700/50">
-                            <h4 className="text-white text-xs font-bold mb-3 uppercase opacity-50">Kekurangan Diagram:</h4>
-                            <p className="text-white text-xs">{gradeResult.reason}</p>
+                        <div className="bg-slate-800/50 rounded-2xl p-4 mb-6 max-h-48 overflow-y-auto border border-slate-700/50 text-left">
+                            <h4 className="text-white text-xs font-bold mb-3 uppercase opacity-50">Umpan Balik:</h4>
+                            <p className="text-white text-xs whitespace-pre-wrap">{gradeResult.reason}</p>
                         </div>
 
                         {gradeResult.isPassed ? (
