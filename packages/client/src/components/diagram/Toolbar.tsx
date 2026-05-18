@@ -14,7 +14,6 @@ export default function Toolbar({
   onRelationChange,
 }: ToolbarProps) {
   const relations: { type: RelationType; color: string; label: string }[] = [
-    { type: "association", color: "text-blue-500", label: "Association" },
     { type: "inheritance", color: "text-orange-500", label: "Inheritance" },
     { type: "interface", color: "text-violet-500", label: "Interface" },
   ];

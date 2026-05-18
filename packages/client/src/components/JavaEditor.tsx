@@ -22,8 +22,8 @@ export default function JavaEditor({ code, fileName, onCodeChange, onRun }: Java
           </div>
           <span className="text-sm font-medium text-slate-300">{fileName}</span>
         </div>
-        
-        <div className="flex items-center gap-3">
+
+        {/* <div className="flex items-center gap-3">
           <button
             className="group flex items-center gap-2 bg-gradient-to-r from-orange-600 to-orange-500 hover:from-orange-500 hover:to-orange-400 text-white px-5 py-1.5 rounded-lg text-sm font-bold shadow-lg shadow-orange-900/20 transition-all active:scale-95"
             onClick={onRun}
@@ -32,7 +32,7 @@ export default function JavaEditor({ code, fileName, onCodeChange, onRun }: Java
             
             Run
           </button>
-        </div>
+        </div> */}
       </div>
 
       {/* Monaco Editor */}
