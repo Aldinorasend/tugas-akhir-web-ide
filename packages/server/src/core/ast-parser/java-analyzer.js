@@ -232,10 +232,13 @@ const extractTypeDeclaration = (
    */
   const isAbstract =
     typeDecl?.children
+      ?.classDeclaration?.[0]
+      ?.children
       ?.classModifier?.some(
         (m) =>
           m?.children?.Abstract
       ) || false;
+
 
   /**
    * EXTENDS
