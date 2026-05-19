@@ -127,3 +127,14 @@ export const compareCode = async (
     }
     return response.json();
 }
+
+export const getLecturerDashboardData = async () => {
+    const response = await fetch(`${API_URL}/lecturer/dashboard/data`, {
+        method: 'GET',
+        headers: getAuthHeaders(),
+    });
+    if (!response.ok) {
+        throw new Error('Gagal mengambil data dashboard dosen');
+    }
+    return response.json();
+};

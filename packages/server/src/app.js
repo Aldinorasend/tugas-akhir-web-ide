@@ -4,6 +4,7 @@ import { createServer } from 'http';
 import studyCaseRoutes from './api/routes/studyCaseRoutes.js';
 import graderRules from './api/routes/graderRules.js';
 import authRoutes from './api/routes/authRoutes.js';
+import lecturerDashboardRoutes from './api/routes/lecturerDashboardRoutes.js';
 
 const app = express();
 
@@ -15,6 +16,7 @@ app.use(express.json());
 app.use('/api/auth', authRoutes);
 app.use('/api/study-cases', studyCaseRoutes);
 app.use('/api/grader', graderRules);
+app.use('/api/lecturer/dashboard', lecturerDashboardRoutes);
 
 // =================================================================
 // PENYESUAIAN SERVERLESS VERCEL
