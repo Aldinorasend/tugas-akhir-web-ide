@@ -43,6 +43,8 @@ export const transformDiagramToLogic = (nodes = [], edges = []) => {
             // Logika pewarisan (Inheritance)
             if (edge.data?.type === "inheritance") {
                 logicRules.push(`extends(${targetName}, ${sourceName}).`);
+            } else if (edge.data?.type === "interface") {
+                logicRules.push(`implements(${targetName}, ${sourceName}).`);
             }
         }
     });

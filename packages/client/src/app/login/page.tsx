@@ -63,8 +63,8 @@ export default function LoginPage() {
     <div className="min-h-screen bg-[#0f172a] text-slate-200 flex flex-col items-center justify-center p-6 font-sans">
       <div className="w-full max-w-sm bg-slate-900 border border-slate-800 rounded-lg p-6 shadow-xl">
         <div className="text-center mb-6">
-          <Link 
-            href="/" 
+          <Link
+            href="/"
             className="inline-block text-xs font-semibold text-slate-500 hover:text-slate-300 transition-colors mb-4"
           >
             ← Kembali ke Beranda
