@@ -172,7 +172,7 @@ export default function ScaffoldingPanel({ stage, activeTab, answerKey, diagramR
                           if (fLower.includes("belum ditemukan") || fLower.includes("missing class")) {
                             reflectivePrompt = `Coba telaah kembali deskripsi: Apakah ada entitas penting yang terlewat dan belum Anda buatkan Class Box-nya di kanvas?`;
                           } else if (fLower.includes("tipe hubungan") || fLower.includes("relasi antara")) {
-                            reflectivePrompt = `Perhatikan hubungan antar objek. Apakah relasi tersebut bersifat pewarisan sifat ('is-a' / extends), pemenuhan kontrak ('implements'), atau kepemilikan data ('has-a')?`;
+                            reflectivePrompt = `Perhatikan hubungan antar objek. Apakah relasi tersebut bersifat pewarisan sifat ('is-a' / extends / inheritance) atau pemenuhan kontrak ('implements' / interface)?`;
                           } else if (fLower.includes("atribut") || fLower.includes("attribute")) {
                             reflectivePrompt = `Mari cek pembungkusan data (Encapsulation). Apakah semua variabel di kelas tersebut sudah memiliki tipe data yang tepat serta tingkat visibilitas (private/public) yang sesuai?`;
                           } else if (fLower.includes("method")) {
@@ -208,7 +208,7 @@ export default function ScaffoldingPanel({ stage, activeTab, answerKey, diagramR
                         ) : (
                           <>
                             <li>
-                              "Anda telah menggambar {currentNodes.length} kelas. Apakah struktur relasi antar kelas tersebut sudah membentuk hierarki 'is-a' (inheritance) atau 'has-a' (association)?"
+                              "Anda telah menggambar {currentNodes.length} kelas. Apakah struktur relasi antar kelas tersebut sudah membentuk hierarki pewarisan sifat 'is-a' (inheritance) atau pemenuhan kontrak (interface)?"
                             </li>
                             <li>
                               "Coba analisis kelas <strong>{currentNodes[0]?.data?.name || 'Pertama'}</strong>. Apakah kelas ini memiliki terlalu banyak tanggung jawab? Ingat prinsip Single Responsibility!"
@@ -415,6 +415,16 @@ export default function ScaffoldingPanel({ stage, activeTab, answerKey, diagramR
                 <h2 className="text-xs font-semibold text-slate-200">
                   Stage 1: Cognitive Directive Support (Coding)
                 </h2>
+
+                {/* Custom Directive Alert for Level 1 Coding */}
+                <div className="bg-amber-500/10 p-4 rounded-xl border border-amber-500/20 flex flex-col gap-1.5 shadow-lg shadow-amber-500/5">
+                  <span className="text-[10px] font-black uppercase tracking-wider text-amber-400 flex items-center gap-1.5 font-sans">
+                    💡 Petunjuk Penting Enkapsulasi & Pewarisan
+                  </span>
+                  <p className="text-xs text-slate-300 leading-relaxed font-semibold">
+                    jangan lupa untuk menambahkan setter getter jika private dan jangan lupa inisiasi keyword super
+                  </p>
+                </div>
 
                 {/* Directive skeleton banner */}
                 <div className="bg-slate-900/50 p-4 rounded-xl border border-slate-800 flex flex-col gap-2">

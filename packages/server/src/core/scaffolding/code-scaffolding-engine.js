@@ -168,10 +168,19 @@ export const evaluateCodeScaffolding = (
     let hintMessage = "";
 
     // ==========================================
+    // CRITICAL STRUGGLE / LEVEL 1 COGNITIVE AID
+    // ==========================================
+    if (mismatchAttempts >= 6 && studentCategory !== "STOPPERS") {
+        givenLevel = 1;
+        triggerReason = "Mahasiswa terindikasi mengalami kesulitan kognitif tingkat tinggi pada implementasi OOP. Bantuan kognitif Level 1 diaktifkan.";
+        hintMessage = "jangan lupa untuk menambahkan setter getter jika private dan jangan lupa inisiasi keyword super";
+    }
+
+    // ==========================================
     // STOPPERS
     // ==========================================
 
-    if (studentCategory === "STOPPERS") {
+    else if (studentCategory === "STOPPERS") {
 
         givenLevel = 3;
 
