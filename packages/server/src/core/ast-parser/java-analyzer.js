@@ -455,7 +455,7 @@ const validateRule = (
   ] = rule.params;
 
   const target = classes.find(
-    (c) => c.name === className
+    (c) => c.name?.toLowerCase() === className?.toLowerCase()
   );
 
   if (!target) {
@@ -477,19 +477,21 @@ const validateRule = (
 
     case "extends":
       return (
-        target.superClass === p2
+        target.superClass?.toLowerCase() === p2?.toLowerCase()
       );
 
     case "implements":
       return (
-        target.implementedInterfaces?.includes(p2) || false
+        target.implementedInterfaces?.some(
+          (i) => i.toLowerCase() === p2?.toLowerCase()
+        ) || false
       );
 
     case "attribute":
       return target.attributes.some(
         (attr) =>
           attr.name === p2 &&
-          attr.type === p3 &&
+          attr.type?.toLowerCase() === p3?.toLowerCase() &&
           attr.access === p4
       );
 
@@ -497,7 +499,7 @@ const validateRule = (
       return target.methods.some(
         (method) =>
           method.name === p2 &&
-          method.returnType === p3 &&
+          method.returnType?.toLowerCase() === p3?.toLowerCase() &&
           method.access === p4
       );
 
