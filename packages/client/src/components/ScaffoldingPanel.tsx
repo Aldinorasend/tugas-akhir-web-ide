@@ -53,7 +53,7 @@ export default function ScaffoldingPanel({ stage, activeTab, answerKey, diagramR
                   <li>Klik tombol <strong className="text-slate-300 font-medium">"Add Class"</strong> untuk membuat kotak kelas baru.</li>
                   <li>Klik dua kali pada nama kelas, nama atribut, atau nama method untuk mengeditnya secara langsung.</li>
                   <li>Tarik garis dari port/titik lingkaran satu kelas ke kelas lainnya untuk menghubungkan relasi.</li>
-                  <li>Tentukan tipe kelas (Class biasa, Abstract Class, atau Interface) di bagian bawah kotak kelas.</li>
+                  <li>Tentukan tipe kelas (Class biasa, Abstract Class, atau Interface) di bagian atas kotak kelas.</li>
                   <li>Klik tombol <strong className="text-slate-300 font-medium">"Check Diagram"</strong> di pojok kanan atas untuk mengecek kebenaran.</li>
                 </ul>
               </section>
@@ -81,8 +81,7 @@ export default function ScaffoldingPanel({ stage, activeTab, answerKey, diagramR
                 <ul className="text-xs text-slate-400 space-y-2 list-disc list-inside leading-relaxed">
                   <li>Gunakan panel penjelajah berkas di sisi kiri untuk membuka dan mengedit berkas Java yang diperlukan.</li>
                   <li>Tulis kode program Java yang valid dan sesuai dengan rancangan kelas yang telah Anda buat di tab diagram.</li>
-                  <li>Klik tombol <strong className="text-slate-300 font-medium">"Run Code"</strong> untuk mengompilasi dan mengeksekusi program Anda.</li>
-                  <li>Periksa hasil keluaran program atau pesan kesalahan (*error compiler*) pada panel output di bagian bawah.</li>
+                  <li>Klik tombol <strong className="text-slate-300 font-medium">"Submit Code"</strong> untuk mengecek dan mengeksekusi program Anda apakah sudah sesuai dengan diagram.</li>
                 </ul>
               </section>
 
@@ -91,9 +90,6 @@ export default function ScaffoldingPanel({ stage, activeTab, answerKey, diagramR
                 <h3 className="text-xs font-semibold text-slate-200">
                   Bantuan Pemecahan Masalah
                 </h3>
-                <p className="text-xs text-slate-400 leading-relaxed">
-                  Apabila program Anda mengalami kegagalan kompilasi atau hasil keluaran belum sesuai, periksalah pesan error yang tertera pada panel output di bawah editor.
-                </p>
                 <p className="text-xs text-slate-400 leading-relaxed">
                   Pastikan struktur deklarasi kelas, nama berkas, tipe data, serta kata kunci pewarisan (*extends* / *implements*) telah ditulis dengan benar.
                 </p>

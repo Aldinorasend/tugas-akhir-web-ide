@@ -549,17 +549,7 @@ export default function StudentDiagramPage({ isNonScaffolding = false }: { isNon
 
         <main className="flex h-screen w-screen overflow-hidden bg-[#020617] text-slate-300">
             <div className="w-86 h-full overflow-y-auto border-r border-slate-800 bg-[#0f172a] p-6 flex flex-col shadow-2xl">
-                <div className="border-dashed p-3 border border-blue-600 rounded-lg mb-6 flex justify-between items-center bg-blue-950/20">
-                    <h1 className="font-bold text-white text-lg">Study Case</h1>
-                    <button
-                        onClick={handleRandomize}
-                        title="Load Random Case"
-                        className="p-1.5 px-3 bg-slate-800 hover:bg-slate-700 active:scale-95 text-blue-400 hover:text-blue-300 rounded-lg transition-all border border-slate-700/50 flex items-center justify-center gap-1.5"
-                    >
-                        <Shuffle className="w-3.5 h-3.5" />
-                        <span className="text-xs font-bold">Random</span>
-                    </button>
-                </div>
+
 
                 <div className="flex flex-col mb-6">
                     <h3 className="text-md font-semibold text-blue-600 "> Title:</h3>
