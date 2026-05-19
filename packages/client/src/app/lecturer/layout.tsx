@@ -59,6 +59,12 @@ export default function LecturerLayout({
       icon: PlusCircle,
       active: pathname === "/lecturer/new",
     },
+    {
+      label: "Student Progress",
+      href: "/lecturer/dashboard",
+      icon: LayoutGrid,
+      active: pathname === "/lecturer/dashboard",
+    },
   ];
 
   if (loading) {

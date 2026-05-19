@@ -4,21 +4,51 @@ import DiagramCanvas, { DiagramCanvasRef } from "@/components/diagram/DiagramCan
 import { createStudyCase } from "@/lib/api"
 
 import { useRef, useState, useEffect, useCallback } from "react";
-import { Rocket, Info, ChevronRight, ChevronDown, Save, Code, Code2, Terminal } from "lucide-react";
+import { Rocket, Info, ChevronRight, ChevronDown, Save, Code, Code2, Terminal, CheckCircle2, XCircle, AlertTriangle, X } from "lucide-react";
 import ProjectExplorer, { FileNode } from "@/components/ProjectExplorer";
 import JavaEditor from "@/components/JavaEditor";
 import OutputPanel from "@/components/OutputPanel";
 import { useSocket } from "@/hooks/useWebsocket";
 import { useWorkspace } from "@/hooks/useWorkspace";
+import { useRouter } from "next/navigation";
 
 export default function NewStudyCasePage() {
   const [title, setTitle] = useState("");
+  const router = useRouter();
+
   const [description, setDescription] = useState("");
-  const [category, setCategory] = useState("inheritance");
-  const [passThreshold, setPassThreshold] = useState(0.7);
   const diagramRef = useRef<DiagramCanvasRef>(null);
   const [loading, setLoading] = useState(false);
   const [activeTab, setActiveTab] = useState<"diagram" | "code">("diagram");
+
+  // Popup Modal State
+  const [modal, setModal] = useState<{
+    isOpen: boolean;
+    title: string;
+    message: string;
+    type: "success" | "error" | "warning";
+    onClose?: () => void;
+  }>({
+    isOpen: false,
+    title: "",
+    message: "",
+    type: "success",
+  });
+
+  const showModal = (
+    title: string,
+    message: string,
+    type: "success" | "error" | "warning",
+    onClose?: () => void
+  ) => {
+    setModal({
+      isOpen: true,
+      title,
+      message,
+      type,
+      onClose,
+    });
+  };
 
   // Shared Workspace Hook
   const {
@@ -51,7 +81,11 @@ export default function NewStudyCasePage() {
 
       if (!snapshot || snapshot.nodes.length === 0) {
         setLoading(false);
-        return alert("Wait! Your diagram is empty.");
+        return showModal(
+          "Diagram Empty",
+          "Wait! Your diagram is empty.",
+          "warning"
+        );
       }
 
       const initialCodeValue = JSON.stringify(nodes);
@@ -60,31 +94,32 @@ export default function NewStudyCasePage() {
       const response = await createStudyCase({
         title,
         description,
-        category,
         initial_code: initialCodeValue,
         nodes: snapshot.nodes,
         edges: snapshot.edges,
       });
       if (response.status === "ok" || response.success) {
-        alert("Success! Study Case and Answer Key are stored.");
-        setTitle("");
-        setDescription("");
-        setPassThreshold(0.7);
-        setNodes([
-          {
-            id: "Main.java",
-            name: "Main.java",
-            type: "file",
-            content: `public class Main {\n    public static void main(String[] args) {\n        // Enter student template code with bugs to solve...\n        System.out.println("Hello, Pathwise!");\n    }\n}`,
-          },
-        ]);
-        setSelectedId("Main.java");
+        showModal(
+          "Success",
+          "Success! Study Case and Answer Key are stored.",
+          "success",
+          () => router.push("/lecturer")
+        );
+
       } else {
-        alert("Publishing failed: " + (response.error || "Unknown server error."));
+        showModal(
+          "Publish Failed",
+          "Publishing failed: " + (response.error || "Unknown server error."),
+          "error"
+        );
       }
     } catch (err: any) {
       console.error("Failed Publish Study Case", err);
-      alert("Failed Publish Study Case: " + err.message);
+      showModal(
+        "Publish Failed",
+        "Failed Publish Study Case: " + err.message,
+        "error"
+      );
     } finally {
       setLoading(false);
     }
@@ -116,21 +151,7 @@ export default function NewStudyCasePage() {
             />
           </div>
 
-          <div>
-            <label className="block text-[10px] font-black text-slate-500 uppercase tracking-widest mb-2 px-1 flex items-center gap-2">
-              <ChevronRight className="w-3 h-3" /> Category / OOP Type
-            </label>
-            <select
-              value={category}
-              onChange={(e) => setCategory(e.target.value)}
-              className="w-full p-3 bg-slate-800/50 border border-slate-700 rounded-xl outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500/50 transition-all text-sm text-slate-300 shadow-inner cursor-pointer"
-            >
-              <option value="inheritance">Inheritance</option>
-              <option value="polymorphism">Polymorphism</option>
-              <option value="encapsulation">Encapsulation</option>
-              <option value="abstraction">Abstraction</option>
-            </select>
-          </div>
+
 
           <div>
             <label className="block text-[10px] font-black text-slate-500 uppercase tracking-widest mb-2 px-1 flex items-center gap-2">
@@ -145,23 +166,7 @@ export default function NewStudyCasePage() {
             />
           </div>
 
-          <div>
-            <label className="block text-[10px] font-black text-slate-500 uppercase tracking-widest mb-2 px-1 flex items-center gap-2">
-              <ChevronRight className="w-3 h-3" /> UML Matching Threshold ({(passThreshold * 100).toFixed(0)}%)
-            </label>
-            <div className="flex items-center gap-4 bg-slate-800/50 border border-slate-700 rounded-xl p-3 shadow-inner">
-              <input
-                type="range"
-                min="0.1"
-                max="1.0"
-                step="0.05"
-                value={passThreshold}
-                onChange={(e) => setPassThreshold(parseFloat(e.target.value))}
-                className="flex-1 h-1 bg-slate-700 rounded-lg appearance-none cursor-pointer accent-blue-500"
-              />
-              <span className="text-xs font-bold text-white shrink-0">{(passThreshold * 100).toFixed(0)}% Match</span>
-            </div>
-          </div>
+
 
           <div className="bg-slate-800/40 border border-slate-700/60 rounded-2xl p-5 flex flex-col gap-4 shadow-xl">
             <div className="flex justify-between items-center">
@@ -303,6 +308,64 @@ export default function NewStudyCasePage() {
           </div>
         </div>
       </div>
+
+      {modal.isOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
+          <div className="bg-[#0f172a] border border-slate-800 rounded-2xl w-full max-w-md p-6 shadow-2xl relative">
+            <button
+              onClick={() => {
+                setModal((prev) => ({ ...prev, isOpen: false }));
+                if (modal.onClose) modal.onClose();
+              }}
+              className="absolute top-4 right-4 text-slate-500 hover:text-white transition-colors"
+            >
+              <X className="w-5 h-5" />
+            </button>
+
+            <div className="flex flex-col items-center text-center gap-4 mt-2">
+              {modal.type === "success" && (
+                <div className="p-3 bg-green-500/10 border border-green-500/20 rounded-full">
+                  <CheckCircle2 className="w-8 h-8 text-green-500" />
+                </div>
+              )}
+              {modal.type === "error" && (
+                <div className="p-3 bg-red-500/10 border border-red-500/20 rounded-full">
+                  <XCircle className="w-8 h-8 text-red-500" />
+                </div>
+              )}
+              {modal.type === "warning" && (
+                <div className="p-3 bg-amber-500/10 border border-amber-500/20 rounded-full">
+                  <AlertTriangle className="w-8 h-8 text-amber-500" />
+                </div>
+              )}
+
+              <div className="space-y-2">
+                <h3 className="text-lg font-bold text-white tracking-tight">
+                  {modal.title}
+                </h3>
+                <p className="text-sm text-slate-400 leading-relaxed px-4">
+                  {modal.message}
+                </p>
+              </div>
+
+              <button
+                onClick={() => {
+                  setModal((prev) => ({ ...prev, isOpen: false }));
+                  if (modal.onClose) modal.onClose();
+                }}
+                className={`mt-4 px-6 py-2.5 rounded-xl font-bold text-sm transition-all shadow-lg ${modal.type === "success"
+                  ? "bg-green-600 hover:bg-green-500 text-white shadow-green-600/10"
+                  : modal.type === "error"
+                    ? "bg-red-600 hover:bg-red-500 text-white shadow-red-600/10"
+                    : "bg-amber-600 hover:bg-amber-500 text-white shadow-amber-600/10"
+                  }`}
+              >
+                Continue
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

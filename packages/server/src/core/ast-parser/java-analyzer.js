@@ -247,6 +247,24 @@ const extractTypeDeclaration = (
       ?.children?.Identifier?.[0]
       ?.image || null;
 
+  /**
+   * IMPLEMENTS
+   */
+  const implementedInterfaces = [];
+  const classImplementsNode = classDecl?.children?.classImplements?.[0];
+  if (classImplementsNode) {
+    const interfaceTypeList = classImplementsNode.children?.interfaceTypeList?.[0];
+    if (interfaceTypeList) {
+      const interfaceTypes = interfaceTypeList.children?.interfaceType || [];
+      interfaceTypes.forEach((it) => {
+        const identifier = it.children?.classType?.[0]?.children?.Identifier?.[0]?.image;
+        if (identifier) {
+          implementedInterfaces.push(identifier);
+        }
+      });
+    }
+  }
+
   const attributes = [];
   const methods = [];
   const constructors = [];
@@ -346,13 +364,14 @@ const extractTypeDeclaration = (
     isInterface,
     isAbstract,
     superClass,
+    implementedInterfaces,
     attributes,
     methods,
     constructors,
   };
 };
 
-/**
+/** 
  * =================================
  * ANALYZE FILE
  * =================================
@@ -436,7 +455,7 @@ const validateRule = (
   ] = rule.params;
 
   const target = classes.find(
-    (c) => c.name === className
+    (c) => c.name?.toLowerCase() === className?.toLowerCase()
   );
 
   if (!target) {
@@ -458,14 +477,21 @@ const validateRule = (
 
     case "extends":
       return (
-        target.superClass === p2
+        target.superClass?.toLowerCase() === p2?.toLowerCase()
+      );
+
+    case "implements":
+      return (
+        target.implementedInterfaces?.some(
+          (i) => i.toLowerCase() === p2?.toLowerCase()
+        ) || false
       );
 
     case "attribute":
       return target.attributes.some(
         (attr) =>
           attr.name === p2 &&
-          attr.type === p3 &&
+          attr.type?.toLowerCase() === p3?.toLowerCase() &&
           attr.access === p4
       );
 
@@ -473,7 +499,7 @@ const validateRule = (
       return target.methods.some(
         (method) =>
           method.name === p2 &&
-          method.returnType === p3 &&
+          method.returnType?.toLowerCase() === p3?.toLowerCase() &&
           method.access === p4
       );
 

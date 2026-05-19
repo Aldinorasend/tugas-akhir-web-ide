@@ -1,4 +1,4 @@
-export const API_URL = "https://pathwise-api.vercel.app/api";
+export const API_URL = process.env.NEXT_PUBLIC_API_URL;
 
 export const getAllStudyCases = async () => {
     const response = await fetch(`${API_URL}/study-cases`, {
@@ -127,3 +127,14 @@ export const compareCode = async (
     }
     return response.json();
 }
+
+export const getLecturerDashboardData = async () => {
+    const response = await fetch(`${API_URL}/lecturer/dashboard/data`, {
+        method: 'GET',
+        headers: getAuthHeaders(),
+    });
+    if (!response.ok) {
+        throw new Error('Gagal mengambil data dashboard dosen');
+    }
+    return response.json();
+};

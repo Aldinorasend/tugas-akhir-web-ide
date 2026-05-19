@@ -59,11 +59,11 @@ export const getStudyCaseById = async (req, res) => {
 }
 
 export const createStudyCase = async (req, res) => {
-    const { title, description, initial_code, category, nodes, edges } = req.body;
+    const { title, description, initial_code, nodes, edges } = req.body;
     try {
         const { data: studyCase, error: caseError } = await supabase
             .from('exercises')
-            .insert({ title, description, initial_code, category })
+            .insert({ title, description, initial_code })
             .select()
             .single(); // Ambil satu object hasil insert
 
@@ -93,13 +93,13 @@ export const createStudyCase = async (req, res) => {
 
 export const updateStudyCase = async (req, res) => {
     const { id } = req.params;
-    const { title, description, initial_code, category, nodes, edges } = req.body;
+    const { title, description, initial_code, nodes, edges } = req.body;
 
     try {
         // 1. Update exercises table
         const { data: studyCase, error: caseError } = await supabase
             .from('exercises')
-            .update({ title, description, initial_code, category })
+            .update({ title, description, initial_code })
             .eq('id', id)
             .select();
 
