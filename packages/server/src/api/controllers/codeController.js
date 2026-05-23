@@ -1,41 +1,45 @@
-import { supabase } from "../../config/supabase.js";
-import { compareCodeWithLogic } from "../../core/ast-parser/java-analyzer.js";
-import { evaluateCodeScaffolding } from "../../core/scaffolding/code-scaffolding-engine.js";
+import {supabase} from "../../config/supabase.js";
+import {compareCodeWithLogic} from "../../core/ast-parser/java-analyzer.js";
+import {evaluateCodeScaffolding} from "../../core/scaffolding/code-scaffolding-engine.js";
 
 // Handler Utama Endpoint HTTP POST /api/grader/compare-code
 export const gradeAndCompareCode = async (req, res) => {
     try {
-        const { exerciseId, current_code, codeMetrics, logic_rules, experiment_group } = req.body;
-        const user_id = req.user?.id;
+        const {
+            exerciseId,
+            current_code,
+            codeMetrics,
+            logic_rules,
+            experiment_group
+        } = req.body;
+        const user_id = req.user ?. id;
         const activeGroup = (experiment_group || req.body.experimentGroup || "CONTROL").toUpperCase();
 
-        // 1. Validasi input parameter dasar dari request body
         if (!current_code || !logic_rules) {
-            return res.status(400).json({ success: false, error: "Missing required parameters: current_code or logic_rules" });
+            return res.status(400).json({success: false, error: "Missing required parameters: current_code or logic_rules"});
         }
 
-        // Validasi UUID untuk user_id dan exerciseId
         const isUUID = (uuid) => /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(uuid);
-        
-        if (!user_id || !isUUID(user_id)) {
-            return res.status(401).json({ success: false, error: "Unauthorized: Missing or invalid user session ID" });
+
+        if (! user_id || ! isUUID(user_id)) {
+            return res.status(401).json({success: false, error: "Unauthorized: Missing or invalid user session ID"});
         }
-        if (!exerciseId || !isUUID(exerciseId)) {
-            return res.status(400).json({ success: false, error: "Missing or invalid exerciseId UUID" });
+        if (!exerciseId || ! isUUID(exerciseId)) {
+            return res.status(400).json({success: false, error: "Missing or invalid exerciseId UUID"});
         }
 
         const actualUserId = user_id;
-        const actualExerciseId = exerciseId; 
+        const actualExerciseId = exerciseId;
 
         // 2. Evaluasi menggunakan AST java-analyzer
         const compareResult = compareCodeWithLogic(current_code, logic_rules);
-        if (!compareResult.success) {
-            return res.status(500).json({ success: false, error: compareResult.error, message: compareResult.message });
+        if (! compareResult.success) {
+            return res.status(500).json({success: false, error: compareResult.error, message: compareResult.message});
         }
 
         // 3. Hitung skor dinamis secara proporsional
-        const totalRules = compareResult.results?.length || 1;
-        const matchedRules = compareResult.results?.filter(r => r.status === "MATCH").length || 0;
+        const totalRules = compareResult.results ?. length || 1;
+        const matchedRules = compareResult.results ?. filter(r => r.status === "MATCH").length || 0;
         const dynamicScore = matchedRules / totalRules;
 
         // 4. Transformasikan hasil untuk dievaluasi oleh scaffolding engine
@@ -47,19 +51,19 @@ export const gradeAndCompareCode = async (req, res) => {
         const finalOverallScore = (dynamicScore * 0.7) + (oopScoreDecimal * 0.3);
 
         // Ekstraksi metrik temporal dan spasial dari payload FE
-        const { temporal, spatial_textual, evaluation } = codeMetrics || {};
-        const timeSpent = temporal?.time_spent_ms || 0;
-        const idleTime = temporal?.idle_time_ms || 0;
-        const maxSingleIdle = temporal?.max_single_idle_ms || 0;
-        const keystrokeCount = spatial_textual?.keystroke_count || 0;
-        const linesOfCode = spatial_textual?.lines_of_code || 0;
-        
+        const {temporal, spatial_textual, evaluation} = codeMetrics || {};
+        const timeSpent = temporal ?. time_spent_ms || 0;
+        const idleTime = temporal ?. idle_time_ms || 0;
+        const maxSingleIdle = temporal ?. max_single_idle_ms || 0;
+        const keystrokeCount = spatial_textual ?. keystroke_count || 0;
+        const linesOfCode = spatial_textual ?. lines_of_code || 0;
+
         // Ambil jumlah run_count terkini yang dikirim oleh FE (sudah di-increment +1 di FE)
-        const currentRunCount = evaluation?.run_count || 1;
+        const currentRunCount = evaluation ?. run_count || 1;
 
         // Ekstraksi jumlah error dari hasil AST Parser
-        const syntaxErrorCount = compareResult.results?.filter(r => r.type === "SYNTAX_ERROR").length || 0;
-        const logicalErrorCount = compareResult.results?.filter(r => r.type === "LOGICAL_ERROR").length || 0;
+        const syntaxErrorCount = compareResult.results ?. filter(r => r.type === "SYNTAX_ERROR").length || 0;
+        const logicalErrorCount = compareResult.results ?. filter(r => r.type === "LOGICAL_ERROR").length || 0;
 
         // Hitung ulang rasio rasional untuk disimpan ke dalam kolom database
         const hesitationRatio = timeSpent > 0 ? idleTime / timeSpent : 0;
@@ -70,60 +74,68 @@ export const gradeAndCompareCode = async (req, res) => {
         // 5. ATOMIC UPSERT: Simpan Metrik Kumulatif ke code_phase_metrics
         // =================================================================
         // Kita tidak memakai array JSON logs lagi, semua metrik granular langsung masuk kolom
-        const { data: upsertedMetric, error: updateError } = await supabase
-            .from("code_phase_metrics")
-            .upsert({
-                user_id: actualUserId,
-                exercise_id: actualExerciseId,
-                time_spent_ms: timeSpent,
-                idle_time_ms: idleTime,
-                max_single_idle_ms: maxSingleIdle,
-                keystroke_count: keystrokeCount,
-                lines_of_code: linesOfCode,
-                run_count: currentRunCount,
-                syntax_error_count: syntaxErrorCount,
-                logical_error_count: logicalErrorCount,
-                hesitation_ratio: parseFloat(hesitationRatio.toFixed(2)),
-                run_velocity: parseFloat(runVelocity.toFixed(2)),
-                frustration_index: parseFloat(Math.min(decision.analytics.frustrationIndex, 1).toFixed(2)),
-                detected_category: decision.analytics.category, // Enum: 'TINKERERS', 'STOPPERS', 'MOVERS'
-                is_passed: decision.isPassed,
-                experiment_group: activeGroup
-            }, { onConflict: 'user_id, exercise_id' }) // Memanfaatkan Composite Key agar meng-update 1 baris yang sama
-            .select("id")
-            .single();
+        const {data: upsertedMetric, error: updateError} = await supabase.from("code_phase_metrics").upsert({
+            user_id: actualUserId,
+            exercise_id: actualExerciseId,
+            time_spent_ms: timeSpent,
+            idle_time_ms: idleTime,
+            max_single_idle_ms: maxSingleIdle,
+            keystroke_count: keystrokeCount,
+            lines_of_code: linesOfCode,
+            run_count: currentRunCount,
+            syntax_error_count: syntaxErrorCount,
+            logical_error_count: logicalErrorCount,
+            hesitation_ratio: parseFloat(hesitationRatio.toFixed(2)),
+            run_velocity: parseFloat(runVelocity.toFixed(2)),
+            frustration_index: parseFloat(Math.min(decision.analytics.frustrationIndex, 1).toFixed(2)),
+            detected_category: decision.analytics.category, // Enum: 'TINKERERS', 'STOPPERS', 'MOVERS'
+            is_passed: decision.isPassed,
+            experiment_group: activeGroup
+        }, {onConflict: 'user_id, exercise_id'}) // Memanfaatkan Composite Key agar meng-update 1 baris yang sama.select("id").single();
 
-        if (updateError) throw updateError;
+        if (updateError) 
+            throw updateError;
+        
+
 
         // =================================================================
         // 6. INSERT LOG: Catat Riwayat Intervensi Ke scaffolding_logs
         // =================================================================
-        const firstMismatched = compareResult.results?.find(r => r.status === "MISMATCH");
+        const firstMismatched = compareResult.results ?. find(r => r.status === "MISMATCH");
         const conceptNode = firstMismatched ? firstMismatched.rule : "Code_All_Matched";
 
-        const { error: logError } = await supabase
-            .from("scaffolding_logs")
-            .insert({
-                user_id: actualUserId,
-                exercise_id: actualExerciseId,
-                trigger_phase: 'CODE_DEBUGGING', // Menandai bahwa ini log dari fase koding (Sesuai DDL Baru)
-                detected_category: decision.analytics.category,
-                scaffolding_level: decision.scaffolding.level, // 1, 2, atau 3
-                trigger_reason: decision.scaffolding.reason,
-                hint_message: decision.scaffolding.hint || "Periksa kembali aturan konseptual diagram pada kode Anda.",
-                current_score: Math.round(finalOverallScore * 100),
-                experiment_group: activeGroup
-            });
+        const {error: logError} = await supabase.from("scaffolding_logs").insert({
+            user_id: actualUserId,
+            exercise_id: actualExerciseId,
+            trigger_phase: 'CODE_DEBUGGING', // Menandai bahwa ini log dari fase koding (Sesuai DDL Baru)
+            detected_category: decision.analytics.category,
+            scaffolding_level: decision.scaffolding.level, // 1, 2, atau 3
+            trigger_reason: decision.scaffolding.reason,
+            hint_message: decision.scaffolding.hint || "Periksa kembali aturan konseptual diagram pada kode Anda.",
+            current_score: Math.round(finalOverallScore * 100),
+            experiment_group: activeGroup
+        });
 
-        if (logError) throw logError;
+        if (logError) 
+            throw logError;
+        
+
 
         // 7. Format umpan balik sebagai list string feedback untuk kompatibilitas UI
-        const feedbacks = compareResult.results?.map(r => `${r.status === "MATCH" ? "✅" : "❌"} ${r.rule || r.message}`) || [];
+        const feedbacks = compareResult.results ?. map(r => `${
+            r.status === "MATCH" ? "✅" : "❌"
+        } ${
+            r.rule || r.message
+        }`) || [];
 
         // 7.1. Tambahkan hasil analisis efektivitas OOP ke list hints/feedbacks
         if (decision.oopMetrics && Array.isArray(decision.oopMetrics.checks)) {
             decision.oopMetrics.checks.forEach(c => {
-                feedbacks.push(`${c.status === "MATCH" ? "✅" : "❌"} ${c.message}`);
+                feedbacks.push(`${
+                    c.status === "MATCH" ? "✅" : "❌"
+                } ${
+                    c.message
+                }`);
             });
         }
 
@@ -147,6 +159,6 @@ export const gradeAndCompareCode = async (req, res) => {
 
     } catch (error) {
         console.error("Global Code Evaluation Error:", error);
-        return res.status(500).json({ success: false, error: "Internal Server Error", message: error.message });
+        return res.status(500).json({success: false, error: "Internal Server Error", message: error.message});
     }
 };
