@@ -744,7 +744,7 @@ export default function StudentDiagramPage({ isNonScaffolding = false }: { isNon
                         {gradeResult.isPassed ? (
                             gradeResult.submissionType === "code" ? (
                                 <button
-                                    onClick={() => router.push("/student")}
+                                    onClick={() => router.push("/student/select")}
                                     className="w-full py-4 bg-gradient-to-r from-emerald-500 to-green-600 hover:from-emerald-400 hover:to-green-500 text-white rounded-2xl font-black text-sm uppercase tracking-wider transition-all shadow-xl shadow-green-500/20 flex items-center justify-center gap-2"
                                 >
                                     <span>Selesai kembali ke menu utama</span>

@@ -14,6 +14,7 @@ export type Method = {
   name: string;
   returnType: string;
   access: AccessModifier;
+  parameters?: string;
 };
 
 export type UMLClassData = {

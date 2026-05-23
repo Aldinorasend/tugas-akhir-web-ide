@@ -23,6 +23,7 @@ export function saveDiagramState(nodes: UMLNode[], edges: UMLEdge[]): string {
         name: m.name,
         returnType: m.returnType,
         access: m.access,
+        parameters: m.parameters || "",
       })) || [],
     },
   }));
