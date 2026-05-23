@@ -477,8 +477,8 @@ export default function ScaffoldingPanel({ stage, activeTab, answerKey, diagramR
                                       <div className="flex gap-1">
                                         <span className="text-emerald-500/80">{meth.access}</span>
                                         {isAbstract && !isInterface && <span className="text-purple-450">abstract</span>}
-                                        <span>{meth.type}</span>
-                                        <span className="text-slate-200">{meth.name}()</span>
+                                        <span>{meth.type || meth.returnType}</span>
+                                        <span className="text-slate-200">{meth.name}({meth.parameters || ""})</span>
                                       </div>
                                     </li>
                                   ))}

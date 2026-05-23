@@ -69,6 +69,7 @@ export default function ClassNode({
     const newMethod = {
       id: generateId(),
       name: "newMethod",
+      parameters: "",
       returnType: "void",
       access: "+" as AccessModifier,
     };
@@ -102,7 +103,7 @@ export default function ClassNode({
   const isNotSelected = isAbstract === undefined && isInterface === undefined;
 
   return (
-    <div className={`bg-slate-900 border border-slate-700 rounded-lg shadow-lg overflow-hidden min-w-[260px] text-slate-200 font-sans`}>
+    <div className={`bg-slate-900 border border-slate-700 rounded-lg shadow-lg overflow-hidden min-w-[320px] text-slate-200 font-sans`}>
       {/* Handles for connections */}
       <Handle type="target" position={Position.Top} className="w-2.5 h-2.5 bg-slate-400 border border-slate-900" />
       <Handle type="source" position={Position.Bottom} className="w-2.5 h-2.5 bg-slate-400 border border-slate-900" />
@@ -191,7 +192,7 @@ export default function ClassNode({
                 <select
                   value={attr.access}
                   onChange={(e) => updateAttribute(attr.id, { access: e.target.value as AccessModifier })}
-                  className="nodrag nopan bg-slate-950 text-slate-300 text-[11px] font-semibold rounded outline-none px-1 py-0.5 border border-slate-800 focus:border-slate-700"
+                  className="nodrag nopan bg-slate-950 text-slate-300 text-[11px] font-semibold rounded outline-none px-1 py-0.5 border border-slate-800 focus:border-slate-700 shrink-0"
                 >
                   <option value="+">+</option>
                   <option value="-">-</option>
@@ -201,23 +202,19 @@ export default function ClassNode({
                   type="text"
                   value={attr.name}
                   onChange={(e) => updateAttribute(attr.id, { name: e.target.value })}
-                  className="nodrag nopan text-[11px] w-full bg-slate-950 border border-slate-800 outline-none focus:border-slate-700 px-1.5 py-0.5 rounded text-slate-300"
+                  className="nodrag nopan text-[11px] flex-1 bg-slate-950 border border-slate-800 outline-none focus:border-slate-700 px-1.5 py-0.5 rounded text-slate-300 min-w-0"
                   placeholder="name"
                 />
                 <span className="text-[11px] text-slate-500">:</span>
-                <select
+                <input
+                  list="common-types"
+                  type="text"
                   value={attr.type}
                   onChange={(e) => updateAttribute(attr.id, { type: e.target.value })}
-                  className="nodrag nopan text-[11px] w-20 bg-slate-950 border border-slate-800 outline-none focus:border-slate-700 px-1 py-0.5 rounded text-slate-300 font-mono"
-                >
-                  {COMMON_TYPES.filter(t => t !== 'void').map(type => (
-                    <option key={type} value={type}>{type}</option>
-                  ))}
-                  {!COMMON_TYPES.includes(attr.type) && (
-                    <option value={attr.type}>{attr.type}</option>
-                  )}
-                </select>
-                <button onClick={(e) => removeAttribute(e, attr.id)} className="nodrag nopan text-slate-500 hover:text-red-400 p-0.5 rounded transition-colors flex items-center justify-center">
+                  className="nodrag nopan text-[11px] w-20 bg-slate-950 border border-slate-800 outline-none focus:border-slate-700 px-1 py-0.5 rounded text-slate-300 font-mono shrink-0"
+                  placeholder="type"
+                />
+                <button onClick={(e) => removeAttribute(e, attr.id)} className="nodrag nopan text-slate-500 hover:text-red-400 p-0.5 rounded transition-colors flex items-center justify-center shrink-0">
                   <Trash2 size={11} />
                 </button>
               </>
@@ -243,7 +240,8 @@ export default function ClassNode({
               <div className="flex items-center gap-1 text-[11px] w-full">
                 <span className="text-slate-400 font-semibold w-3.5">{method.access}</span>
                 <span className="text-slate-300">{method.name}</span>
-                <span className="text-slate-500">():</span>
+                <span className="text-slate-500 font-mono">({method.parameters || ""})</span>
+                <span className="text-slate-500">:</span>
                 <span className="text-slate-300 font-mono">{method.returnType}</span>
               </div>
             ) : (
@@ -251,7 +249,7 @@ export default function ClassNode({
                 <select
                   value={method.access}
                   onChange={(e) => updateMethod(method.id, { access: e.target.value as AccessModifier })}
-                  className="nodrag nopan bg-slate-950 text-slate-300 text-[11px] font-semibold rounded outline-none px-1 py-0.5 border border-slate-800 focus:border-slate-700"
+                  className="nodrag nopan bg-slate-950 text-slate-300 text-[11px] font-semibold rounded outline-none px-1 py-0.5 border border-slate-800 focus:border-slate-700 shrink-0"
                 >
                   <option value="+">+</option>
                   <option value="-">-</option>
@@ -261,23 +259,27 @@ export default function ClassNode({
                   type="text"
                   value={method.name}
                   onChange={(e) => updateMethod(method.id, { name: e.target.value })}
-                  className="nodrag nopan text-[11px] w-full bg-slate-950 border border-slate-800 outline-none focus:border-slate-700 px-1.5 py-0.5 rounded text-slate-300"
+                  className="nodrag nopan text-[11px] flex-1 bg-slate-950 border border-slate-800 outline-none focus:border-slate-700 px-1.5 py-0.5 rounded text-slate-300 min-w-0"
                   placeholder="method"
                 />
-                <span className="text-[11px] text-slate-500">():</span>
-                <select
+                <span className="text-[11px] text-slate-500 font-mono shrink-0">(</span>
+                <input
+                  type="text"
+                  value={method.parameters || ""}
+                  onChange={(e) => updateMethod(method.id, { parameters: e.target.value })}
+                  className="nodrag nopan text-[11px] w-20 bg-slate-950 border border-slate-800 outline-none focus:border-slate-700 px-1 py-0.5 rounded text-slate-300 font-mono shrink-0"
+                  placeholder="params"
+                />
+                <span className="text-[11px] text-slate-500 font-mono shrink-0">):</span>
+                <input
+                  list="common-types-void"
+                  type="text"
                   value={method.returnType}
                   onChange={(e) => updateMethod(method.id, { returnType: e.target.value })}
-                  className="nodrag nopan text-[11px] w-20 bg-slate-950 border border-slate-800 outline-none focus:border-slate-700 px-1 py-0.5 rounded text-slate-300 font-mono"
-                >
-                  {COMMON_TYPES.map(type => (
-                    <option key={type} value={type}>{type}</option>
-                  ))}
-                  {!COMMON_TYPES.includes(method.returnType) && (
-                    <option value={method.returnType}>{method.returnType}</option>
-                  )}
-                </select>
-                <button onClick={(e) => removeMethod(e, method.id)} className="nodrag nopan text-slate-500 hover:text-red-400 p-0.5 rounded transition-colors flex items-center justify-center">
+                  className="nodrag nopan text-[11px] w-14 bg-slate-950 border border-slate-800 outline-none focus:border-slate-700 px-1 py-0.5 rounded text-slate-300 font-mono shrink-0"
+                  placeholder="type"
+                />
+                <button onClick={(e) => removeMethod(e, method.id)} className="nodrag nopan text-slate-500 hover:text-red-400 p-0.5 rounded transition-colors flex items-center justify-center shrink-0">
                   <Trash2 size={11} />
                 </button>
               </>
@@ -285,6 +287,18 @@ export default function ClassNode({
           </div>
         ))}
       </div>
+
+      {/* Datalists for custom autocomplete */}
+      <datalist id="common-types">
+        {COMMON_TYPES.filter(t => t !== 'void').map(type => (
+          <option key={type} value={type} />
+        ))}
+      </datalist>
+      <datalist id="common-types-void">
+        {COMMON_TYPES.map(type => (
+          <option key={type} value={type} />
+        ))}
+      </datalist>
     </div>
   );
 }
