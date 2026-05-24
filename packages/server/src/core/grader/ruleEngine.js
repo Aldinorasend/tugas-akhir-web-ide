@@ -29,6 +29,12 @@ export const compareDiagrams = (studentNodes = [], studentEdges = [], rules) => 
         if (n.id && n.data?.name) studentNodeIdToName[n.id] = n.data.name.toLowerCase();
     });
 
+    const normalizeAccess = (access) => {
+    if (access === "+") return "public";
+    if (access === "-") return "private";
+    if (access === "#") return "protected";
+    return access?.toLowerCase();
+};
     // 1. Validasi Kelas (Nodes)
     nodesRule.forEach(ruleNode => {
 
@@ -38,7 +44,7 @@ export const compareDiagrams = (studentNodes = [], studentEdges = [], rules) => 
         totalPossible += 1; // Poin kelas
         const ruleAttrs = ruleNode.data?.attributes || [];
         const ruleMethods = ruleNode.data?.methods || [];
-
+        console.log(ruleMethods);
         ruleAttrs.forEach(() => totalPossible += 1);
         ruleMethods.forEach(() => totalPossible += 1);
         // --------------------------------------------------------------------------
@@ -74,7 +80,8 @@ export const compareDiagrams = (studentNodes = [], studentEdges = [], rules) => 
                 const isMatch = studentAttrs.some(sAttr =>
                     sAttr.name?.toLowerCase() === rAttr.name?.toLowerCase() &&
                     sAttr.type?.toLowerCase() === rAttr.type?.toLowerCase() &&
-                    sAttr.access?.toLowerCase() === rAttr.access?.toLowerCase()
+                    normalizeAccess(sAttr.access) === normalizeAccess(rAttr.access)
+
                 );
                 if (isMatch) { score += 1; matchedAttrsCount++; }
             });
@@ -86,12 +93,15 @@ export const compareDiagrams = (studentNodes = [], studentEdges = [], rules) => 
             let matchedMethodsCount = 0;
             const studentMethods = studentNode.data?.methods || [];
             ruleMethods.forEach(rMeth => {
+                const normalizeParams = (params) => {
+                    if (!params) return "";
+                    return params.toLowerCase().replace(/\s/g, "");
+                };
                 const isMatch = studentMethods.some(sMeth =>
                     sMeth.name?.toLowerCase() === rMeth.name?.toLowerCase() &&
-                    sMeth.type?.toLowerCase() === rMeth.type?.toLowerCase() &&
-                    sMeth.parameters?.toLowerCase() === rMeth.parameters?.toLowerCase() &&
-                    sMeth.access?.toLowerCase() === rMeth.access?.toLowerCase() &&
-                    sMeth.returnType?.toLowerCase() === rMeth.returnType?.toLowerCase()
+                    normalizeAccess(sMeth.access) === normalizeAccess(rMeth.access) &&
+                    sMeth.returnType?.toLowerCase() === rMeth.returnType?.toLowerCase() &&
+                    normalizeParams(sMeth.parameters) === normalizeParams(rMeth.parameters)
                 );
                 if (isMatch) { score += 1; matchedMethodsCount++; }
             });

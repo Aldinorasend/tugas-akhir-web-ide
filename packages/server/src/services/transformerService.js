@@ -30,7 +30,25 @@ export const transformDiagramToLogic = (nodes = [], edges = []) => {
                     dataType: attr.type,
                     access: attr.access === "+" ? "public" : attr.access === "#" ? "protected" : "private"
                 });
+                /**
+       * PRIVATE ATTR
+       * MUST HAVE
+       * GETTER SETTER
+       */
 
+      if (
+        attr.access ===
+        "-"
+      ) {
+
+        logicRules.push({
+          type:
+            "getter_setter",
+          class: name,
+          attribute:
+            attr.name,
+        });
+      }
             });
 
         }

@@ -173,7 +173,7 @@ export const evaluateCodeScaffolding = (
     if (mismatchAttempts >= 6 && studentCategory !== "STOPPERS") {
         givenLevel = 1;
         triggerReason = "Mahasiswa terindikasi mengalami kesulitan kognitif tingkat tinggi pada implementasi OOP. Bantuan kognitif Level 1 diaktifkan.";
-        hintMessage = "jangan lupa untuk menambahkan setter getter jika private dan jangan lupa inisiasi keyword super";
+        hintMessage = "jangan lupa untuk menambahkan setter getter jika private";
     }
 
     // ==========================================
@@ -251,9 +251,6 @@ export const evaluateCodeScaffolding = (
         }
     }
 
-    // Calculate OOP Quality checks
-    const oopMetrics = calculateOopMetrics(parsedClasses);
-
     return {
         success: true,
 
@@ -278,8 +275,6 @@ export const evaluateCodeScaffolding = (
                 ),
         },
 
-        oopMetrics,
-
         scaffolding: {
             level: givenLevel,
             reason: triggerReason,
@@ -288,107 +283,6 @@ export const evaluateCodeScaffolding = (
                 studentCategory === "STOPPERS"
         },
 
-        isPassed:
-            mismatchRules === 0 && oopMetrics.overallOop === 100
-    };
-};
-
-const calculateOopMetrics = (classes) => {
-    if (!classes || !Array.isArray(classes) || classes.length === 0) {
-        return {
-            encapsulation: 100,
-            inheritance: 100,
-            overallOop: 100,
-            checks: []
-        };
-    }
-
-    let totalPrivateAttributes = 0;
-    let matchingGettersAndSetters = 0;
-
-    let totalSubclasses = 0;
-    let subclassesWithSuperCall = 0;
-
-    const checks = [];
-
-    classes.forEach((c) => {
-        // 1. Encapsulation: Check private attributes and their getters/setters
-        c.attributes.forEach((attr) => {
-            if (attr.access === "private") {
-                totalPrivateAttributes++;
-
-                const capName = attr.name.charAt(0).toUpperCase() + attr.name.slice(1);
-                const getterName1 = "get" + capName;
-                const getterName2 = "is" + capName; // boolean getter standard
-                const setterName = "set" + capName;
-
-                const hasGetter = c.methods.some(
-                    (m) =>
-                        (m.name === getterName1 || (attr.type === "boolean" && m.name === getterName2)) &&
-                        m.returnType.toLowerCase() === attr.type.toLowerCase() &&
-                        m.access === "public"
-                );
-
-                const hasSetter = c.methods.some(
-                    (m) =>
-                        m.name === setterName &&
-                        m.returnType === "void" &&
-                        m.access === "public"
-                );
-
-                if (hasGetter) matchingGettersAndSetters++;
-                if (hasSetter) matchingGettersAndSetters++;
-
-                if (hasGetter && hasSetter) {
-                    checks.push({
-                        status: "MATCH",
-                        message: `[Enkapsulasi] Atribut private '${attr.name}' pada kelas '${c.name}' telah memiliki public getter dan setter lengkap.`
-                    });
-                } else {
-                    const missingParts = [];
-                    if (!hasGetter) missingParts.push("getter");
-                    if (!hasSetter) missingParts.push("setter");
-                    checks.push({
-                        status: "MISMATCH",
-                        message: `[Enkapsulasi] Atribut private '${attr.name}' pada kelas '${c.name}' belum memiliki public ${missingParts.join(" dan ")} yang sesuai.`
-                    });
-                }
-            }
-        });
-
-        // 2. Inheritance: Check if subclass constructor calls super(...)
-        if (c.superClass) {
-            totalSubclasses++;
-            const hasSuperCall = c.constructors?.some((cons) => cons.hasSuperCall) || false;
-            if (hasSuperCall) {
-                subclassesWithSuperCall++;
-                checks.push({
-                    status: "MATCH",
-                    message: `[Pewarisan] Kelas anak '${c.name}' memanggil konstruktor parent 'super(...)' dengan benar.`
-                });
-            } else {
-                checks.push({
-                    status: "MISMATCH",
-                    message: `[Pewarisan] Kelas anak '${c.name}' belum memanggil konstruktor parent 'super(...)' di dalam konstruktornya.`
-                });
-            }
-        }
-    });
-
-    const encapsulationScore = totalPrivateAttributes > 0
-        ? Math.round((matchingGettersAndSetters / (totalPrivateAttributes * 2)) * 100)
-        : 100;
-
-    const inheritanceScore = totalSubclasses > 0
-        ? Math.round((subclassesWithSuperCall / totalSubclasses) * 100)
-        : 100;
-
-    const overallOop = Math.round((encapsulationScore * 0.5) + (inheritanceScore * 0.5));
-
-    return {
-        encapsulation: encapsulationScore,
-        inheritance: inheritanceScore,
-        overallOop,
-        checks
+        isPassed: mismatchRules === 0
     };
 };

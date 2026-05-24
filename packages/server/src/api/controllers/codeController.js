@@ -46,9 +46,8 @@ export const gradeAndCompareCode = async (req, res) => {
         // Pastikan fungsi ini mengembalikan data bertipe koding (syntax_error, dsb)
         const decision = evaluateCodeScaffolding(compareResult.results, codeMetrics, compareResult.classes);
 
-        // 4b. Hitung composite score: Gabungkan UML match score (70%) dengan efektivitas OOP (30%)
-        const oopScoreDecimal = decision.oopMetrics ? decision.oopMetrics.overallOop / 100 : 1.0;
-        const finalOverallScore = (dynamicScore * 0.7) + (oopScoreDecimal * 0.3);
+        // 4b. Hitung score akhir berdasarkan dynamicScore aturan konseptual diagram (yang sudah mencakup enkapsulasi getter/setter)
+        const finalOverallScore = dynamicScore;
 
         // Ekstraksi metrik temporal dan spasial dari payload FE
         const {temporal, spatial_textual, evaluation} = codeMetrics || {};
@@ -101,8 +100,6 @@ export const gradeAndCompareCode = async (req, res) => {
         // =================================================================
         // 6. INSERT LOG: Catat Riwayat Intervensi Ke scaffolding_logs
         // =================================================================
-        const firstMismatched = compareResult.results ?. find(r => r.status === "MISMATCH");
-        const conceptNode = firstMismatched ? firstMismatched.rule : "Code_All_Matched";
 
         const {error: logError} = await supabase.from("scaffolding_logs").insert({
             user_id: actualUserId,
@@ -122,22 +119,27 @@ export const gradeAndCompareCode = async (req, res) => {
 
 
         // 7. Format umpan balik sebagai list string feedback untuk kompatibilitas UI
-        const feedbacks = compareResult.results ?. map(r => `${
-            r.status === "MATCH" ? "✅" : "❌"
-        } ${
-            r.rule || r.message
-        }`) || [];
+       const feedbacks =
+  compareResult.results?.map(
+    (r) => {
 
-        // 7.1. Tambahkan hasil analisis efektivitas OOP ke list hints/feedbacks
-        if (decision.oopMetrics && Array.isArray(decision.oopMetrics.checks)) {
-            decision.oopMetrics.checks.forEach(c => {
-                feedbacks.push(`${
-                    c.status === "MATCH" ? "✅" : "❌"
-                } ${
-                    c.message
-                }`);
-            });
-        }
+      const ruleName =
+        r.rule.name ||
+        r.rule.method ||
+        r.rule.class ||
+        "Unknown";
+
+      return `
+${r.status === "MATCH" ? "✅" : "❌"}
+[${r.rule.type.toUpperCase()}]
+${ruleName}
+
+${r.message}
+      `.trim();
+    }
+  ) || [];
+
+
 
         // 8. Berikan respon adaptif ke Frontend Next.js
         return res.json({
