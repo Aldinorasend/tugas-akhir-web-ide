@@ -7,7 +7,7 @@ import ClassNode from "./ClassNode";
 import CustomEdge, { MarkerDefinitions } from "./CustomEdge";
 import Toolbar from "./Toolbar";
 import { UMLNode, UMLEdge } from "@/app/types/uml";
-import { forwardRef, useImperativeHandle, ForwardedRef } from "react";
+import { forwardRef, useImperativeHandle, ForwardedRef, useMemo } from "react";
 
 import { saveDiagramState } from "@/lib/umlUtils";
 
@@ -31,8 +31,21 @@ const DiagramInner = forwardRef((props: any, ref: ForwardedRef<DiagramCanvasRef>
     nodes, edges, onNodesChange, onEdgesChange,
     onConnect, addClass, selectedRelation, setSelectedRelation,
     setNodes, setEdges,
-    diagramMetrics, trackEvaluationSubmit
+    diagramMetrics, trackEvaluationSubmit,
+    onUpdateNode, onDeleteNode
   } = useDiagram();
+
+  // Inject callbacks into node data dynamically so custom nodes can use them without poluting the serializable state
+  const nodesWithCallbacks = useMemo(() => {
+    return nodes.map((node) => ({
+      ...node,
+      data: {
+        ...node.data,
+        onUpdate: onUpdateNode,
+        onDelete: onDeleteNode,
+      },
+    }));
+  }, [nodes, onUpdateNode, onDeleteNode]);
 
   // This is the magic part: it makes 'nodes' and 'edges' 
   // available to whoever holds a reference to this component.
@@ -70,7 +83,7 @@ const DiagramInner = forwardRef((props: any, ref: ForwardedRef<DiagramCanvasRef>
       />
 
       <ReactFlow
-        nodes={nodes}
+        nodes={nodesWithCallbacks}
         edges={edges}
         nodeTypes={nodeTypes}
         edgeTypes={edgeTypes}

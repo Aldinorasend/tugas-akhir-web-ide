@@ -1,17 +1,22 @@
 const detectCodeCategory = (metrics, graderResults = []) => {
-    const { temporal, spatial_textual, spatial_churn, evaluation } = metrics || {};
+    const {
+        temporal,
+        spatial_textual,
+        spatial_churn,
+        evaluation
+    } = metrics || {};
 
-    const timeSpent = temporal?.time_spent_ms || 0;
-    const idleTime = temporal?.idle_time_ms || 0;
-    const maxSingleIdle = temporal?.max_single_idle_ms || 0;
+    const timeSpent = temporal ?.time_spent_ms || 0;
+    const idleTime = temporal ?.idle_time_ms || 0;
+    const maxSingleIdle = temporal ?.max_single_idle_ms || 0;
 
-    const keystrokeCount = spatial_textual?.keystroke_count || 0;
+    const keystrokeCount = spatial_textual ?.keystroke_count || 0;
 
-    const totalActions = spatial_churn?.total_actions || 0;
-    const deleteCount = spatial_churn?.delete_count || 0;
+    const totalActions = spatial_churn ?.total_actions || 0;
+    const deleteCount = spatial_churn ?.delete_count || 0;
 
-    const submitCount = evaluation?.submit_count || 0;
-    const mismatchAttempts = evaluation?.mismatch_attempts || 0;
+    const submitCount = evaluation ?.submit_count || 0;
+    const mismatchAttempts = evaluation ?.mismatch_attempts || 0;
 
     if (timeSpent === 0) {
         return "TINKERERS";
@@ -21,268 +26,98 @@ const detectCodeCategory = (metrics, graderResults = []) => {
     // DERIVED METRICS
     // ==========================================
 
-    const hesitationRatio =
-        timeSpent > 0 ? idleTime / timeSpent : 0;
-
-    const churnRatio =
-        totalActions > 0 ? deleteCount / totalActions : 0;
-
+    const hesitationRatio = timeSpent > 0 ? idleTime / timeSpent : 0;
+    const churnRatio = totalActions > 0 ? deleteCount / totalActions : 0;
     const timeSpentMinutes = timeSpent / 60000;
-
-    const submitVelocity =
-        timeSpentMinutes > 0
-            ? submitCount / timeSpentMinutes
-            : 0;
-
-    const mismatchRatio =
-        submitCount > 0
-            ? mismatchAttempts / submitCount
-            : 0;
-
-    // ==========================================
-    // 1. MOVERS
-    // Rapid semantic checking / gaming tendency
-    // ==========================================
-
-    if (
-        submitCount >= 5 &&
-        submitVelocity >= 1.2 &&
-        mismatchRatio >= 0.7
-    ) {
-        return "MOVERS";
+    const submitVelocity = timeSpentMinutes > 0 ? submitCount / timeSpentMinutes : 0;
+    const mismatchRatio = submitCount > 0 ? mismatchAttempts / submitCount : 0;
+    const netKeystroke = keystrokeCount - deleteCount;
+    // Jalur 1: Movers
+    if (submitCount >= 2 && keystrokeCount > 15) {
+        if (submitVelocity >= 1.2 || churnRatio >= 0.35 || mismatchRatio >= 0.7) {
+            return "MOVERS";
+        }
     }
 
-    // ==========================================
-    // 2. STOPPERS
-    // Passive stuck / disengagement
-    // ==========================================
-
-    if (
-        keystrokeCount < 80 &&
-        (
-            hesitationRatio > 0.65 ||
-            maxSingleIdle > 420000
-        )
-    ) {
-        return "STOPPERS";
+    // Jalur 2: Stoppers
+    if (netKeystroke < 50) {
+        if (hesitationRatio > 0.5 || maxSingleIdle > 300000) {
+            return "STOPPERS";
+        }
     }
-
-    // ==========================================
-    // 3. DEFAULT
-    // Healthy / reflective exploration
-    // ==========================================
-
     return "TINKERERS";
+
+
 };
 
-export const evaluateCodeScaffolding = (
-    graderResults,
-    codeMetrics,
-    parsedClasses = []
-) => {
+export const evaluateCodeScaffolding = (graderResults, codeMetrics, parsedClasses = []) => {
+    // ... (Perhitungan kriteria dasar tetap sama seperti kode sebelumnya)
 
-    const totalRules = graderResults.length;
+    let studentCategory = detectCodeCategory(codeMetrics, graderResults);
+    
+    const { temporal, evaluation } = codeMetrics || {};
+    const maxSingleIdle = temporal?.max_single_idle_ms || 0;
+    const idleTime = temporal?.idle_time_ms || 0;
+    const timeSpent = temporal?.time_spent_ms || 0;
+    const mismatchAttempts = evaluation?.mismatch_attempts || 0;
 
-    const mismatchRules =
-        graderResults.filter(
-            r => r.status === "MISMATCH"
-        ).length;
+    const hesitationRatio = timeSpent > 0 ? idleTime / timeSpent : 0;
 
-    const codeErrorRatio =
-        totalRules > 0
-            ? mismatchRules / totalRules
-            : 0;
+    // =================================================================
+    // MEKANISME RECOVERY (Mengubah Movers -> Tinkerers Secara Paksa)
+    // =================================================================
+    if (studentCategory === "MOVERS") {
+        // Indikator Pertobatan 1: Mahasiswa mulai mengambil jeda berpikir yang cukup lama
+        // setelah dinasihati (maxSingleIdle > 1.5 menit atau hesitationRatio tinggi)
+        const isTakingPause = maxSingleIdle > 90000 || hesitationRatio > 0.45;
 
-    const studentCategory =
-        detectCodeCategory(
-            codeMetrics,
-            graderResults
-        );
+        const totalRules = graderResults.length;
+        const mismatchRules = graderResults.filter(r => r.status === "MISMATCH").length;
+        const codeErrorRatio = totalRules > 0 ? mismatchRules / totalRules : 0;
+        const isProgressing = codeErrorRatio <= 0.3;
 
-    const {
-        temporal,
-        spatial_churn,
-        evaluation,
-        spatial_textual
-    } = codeMetrics || {};
+        if (isTakingPause || isProgressing) {
+            studentCategory = "TINKERERS";
+        }
+    }
 
-    // ==========================================
-    // METRICS
-    // ==========================================
-
-    const timeSpent =
-        temporal?.time_spent_ms || 0;
-
-    const idleTime =
-        temporal?.idle_time_ms || 0;
-
-    const hesitationRatio =
-        timeSpent > 0
-            ? idleTime / timeSpent
-            : 0;
-
-    const totalActions =
-        spatial_churn?.total_actions || 0;
-
-    const deleteCount =
-        spatial_churn?.delete_count || 0;
-
-    const churnRatio =
-        totalActions > 0
-            ? deleteCount / totalActions
-            : 0;
-
-    const submitCount =
-        evaluation?.submit_count || 0;
-
-    const mismatchAttempts =
-        evaluation?.mismatch_attempts || 0;
-
-    const keystrokeCount =
-        spatial_textual?.keystroke_count || 0;
-
-    // ==========================================
-    // FRUSTRATION INDEX
-    // ==========================================
-
-    const frustrationIndex =
-        (
-            churnRatio * 0.3
-        ) +
-        (
-            hesitationRatio * 0.2
-        ) +
-        (
-            Math.min(
-                mismatchAttempts * 0.1,
-                0.5
-            )
-        );
-
-    // ==========================================
-    // SCAFFOLD DECISION
-    // ==========================================
-
+   
     let givenLevel = 3;
     let triggerReason = "";
     let hintMessage = "";
 
-    // ==========================================
-    // CRITICAL STRUGGLE / LEVEL 1 COGNITIVE AID
-    // ==========================================
-    if (mismatchAttempts >= 6 && studentCategory !== "STOPPERS") {
-        givenLevel = 1;
-        triggerReason = "Mahasiswa terindikasi mengalami kesulitan kognitif tingkat tinggi pada implementasi OOP. Bantuan kognitif Level 1 diaktifkan.";
-        hintMessage = "jangan lupa untuk menambahkan setter getter jika private";
-    }
-
-    // ==========================================
-    // STOPPERS
-    // ==========================================
-
-    else if (studentCategory === "STOPPERS") {
-
-        givenLevel = 3;
-
-        triggerReason =
-            "Mahasiswa terindikasi mengalami stagnasi interaksi dan penghentian progres sementara.";
-
-        hintMessage =
-            "Tidak apa-apa jika implementasi OOP terasa membingungkan. Coba fokuskan perhatian pada satu class terlebih dahulu sebelum melanjutkan ke relasi inheritance atau interface.";
-
-    }
-
-    // ==========================================
-    // MOVERS
-    // ==========================================
-
-    else if (studentCategory === "MOVERS") {
-
-        givenLevel = 2;
-
-        triggerReason =
-            "Mahasiswa menunjukkan kecenderungan semantic checking berulang tanpa refleksi konseptual mendalam.";
-
-        hintMessage =
-            "Coba hentikan percobaan validasi sesaat. Telaah kembali apakah relasi inheritance, abstract class, atau interface pada kode Anda sudah benar-benar sesuai dengan diagram UML.";
-
-    }
-
-    // ==========================================
-    // TINKERERS
-    // ==========================================
-
-    else if (studentCategory === "TINKERERS") {
-
-        // --------------------------------------
-        // STRUGGLING TINKERERS
-        // Active but conceptually struggling
-        // --------------------------------------
-
-        if (
-            codeErrorRatio > 0.3 &&
-            mismatchAttempts >= 3
-        ) {
-
+    if (studentCategory === "STOPPERS") {
+        if (maxSingleIdle > 420000) {
+            givenLevel = 1;
+            triggerReason = "Mahasiswa mengalami kebuntuan mengetik ekstrem (>7 menit). Injeksi cetak biru kerangka kode diaktifkan.";
+            hintMessage = "Sistem mendeteksi stagnasi aktivitas. Kerangka dasar kelas Java telah disiapkan untuk membantu Anda menyusun struktur berkas.";
+        } else {
             givenLevel = 2;
-
-            triggerReason =
-                "Mahasiswa aktif melakukan eksplorasi solusi, namun masih mengalami miskonsepsi implementasi OOP.";
-
-            hintMessage =
-                "Perhatikan kembali implementasi method dan hubungan antarkelas. Apakah seluruh method yang dideklarasikan sudah memiliki body yang valid? Apakah penggunaan extends dan implements sudah sesuai konteks?";
-
+            triggerReason = "Mahasiswa mengalami stagnasi mengetik awal (>5 menit). Pertanyaan pemandu metakognitif diaktifkan.";
+            hintMessage = "Apakah Anda bingung memulai pengetikan kode? Coba periksa kembali deklarasi package, nama public class, atau apakah konstruktor utama sudah Anda inisialisasi.";
         }
+    } 
+    else if (studentCategory === "MOVERS") {
+        givenLevel = 2;
+        triggerReason = "Mahasiswa menunjukkan kecenderungan semantic checking berulang tanpa refleksi konseptual mendalam.";
+        hintMessage = "Coba hentikan percobaan submit sesaat. Telaah kembali secara mandiri apakah relasi inheritance, abstract class, atau interface pada baris kode Anda sudah benar-benar sinkron dengan spesifikasi diagram.";
+    } 
+    else if (studentCategory === "TINKERERS") {
+        const totalRules = graderResults.length;
+        const mismatchRules = graderResults.filter(r => r.status === "MISMATCH").length;
+        const codeErrorRatio = totalRules > 0 ? mismatchRules / totalRules : 0;
 
-        // --------------------------------------
-        // HEALTHY TINKERERS
-        // --------------------------------------
-
-        else {
-
+        if (codeErrorRatio > 0.3) {
+            givenLevel = 2;
+            triggerReason = "Mahasiswa aktif melakukan eksplorasi solusi, namun masih mengalami miskonsepsi implementasi OOP (At-Risk Tinkerers).";
+            hintMessage = "Perhatikan kembali implementasi method dan hubungan antarkelas Anda. Apakah penggunaan keyword 'extends' atau 'implements' sudah tepat? Apakah visibilitas komponen private sudah dilindungi mekanisme pembungkusan data?";
+        } else {
             givenLevel = 3;
-
-            triggerReason =
-                "Mahasiswa menunjukkan pola eksplorasi solusi yang stabil dan progresif.";
-
-            hintMessage =
-                "Progres implementasi Anda sudah berada pada jalur yang baik. Lanjutkan pengecekan detail kecil seperti return type, modifier, dan konsistensi struktur class.";
-
+            triggerReason = "Mahasiswa menunjukkan pola eksplorasi solusi yang stabil dan progresif (Healthy Tinkerers).";
+            hintMessage = "Progres implementasi Anda sudah berada pada jalur yang baik. Lanjutkan pengecekan detail kecil seperti return type, modifier, dan konsistensi struktur class.";
         }
     }
 
-    return {
-        success: true,
-
-        matrix: {
-            codeErrorRatio,
-            hesitationRatio,
-            churnRatio,
-        },
-
-        analytics: {
-            category: studentCategory,
-
-            frustrationIndex:
-                parseFloat(
-                    Math.min(frustrationIndex, 1)
-                        .toFixed(2)
-                ),
-
-            errorRatio:
-                parseFloat(
-                    codeErrorRatio.toFixed(2)
-                ),
-        },
-
-        scaffolding: {
-            level: givenLevel,
-            reason: triggerReason,
-            hint: hintMessage,
-            shouldResetIdle:
-                studentCategory === "STOPPERS"
-        },
-
-        isPassed: mismatchRules === 0
-    };
+    // return object hasil evaluasi...
+    return { success: true, analytics: { category: studentCategory }, scaffolding: { level: givenLevel, hint: hintMessage, reason: triggerReason } };
 };

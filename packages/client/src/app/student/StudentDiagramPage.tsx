@@ -56,7 +56,7 @@ export default function StudentDiagramPage({ isNonScaffolding = false }: { isNon
 
     // Multiple tabs UI state
     const [activeTab, setActiveTab] = useState<"diagram" | "code">("diagram");
-    const [isIdeUnlocked, setIsIdeUnlocked] = useState(false);
+    const [isIdeUnlocked, setIsIdeUnlocked] = useState(true);
     const [showScaffolding, setShowScaffolding] = useState(false);
 
     // Coding Phase Analytics Metrics state

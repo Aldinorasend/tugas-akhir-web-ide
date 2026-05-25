@@ -7,21 +7,25 @@ export default function ClassNode({
   id,
   data,
 }: NodeProps<UMLClassData>) {
-  const { name, attributes = [], methods = [], isAbstract, isInterface, readOnly } = data;
+  const { name, attributes = [], methods = [], isAbstract, isInterface, readOnly, onUpdate, onDelete } = data;
   const { setNodes, setEdges } = useReactFlow();
 
   const updateNodeData = (updates: Partial<UMLClassData>) => {
-    setNodes((nds) =>
-      nds.map((node) => {
-        if (node.id === id) {
-          return {
-            ...node,
-            data: { ...node.data, ...updates },
-          };
-        }
-        return node;
-      })
-    );
+    if (onUpdate) {
+      onUpdate(id, updates);
+    } else {
+      setNodes((nds) =>
+        nds.map((node) => {
+          if (node.id === id) {
+            return {
+              ...node,
+              data: { ...node.data, ...updates },
+            };
+          }
+          return node;
+        })
+      );
+    }
   };
 
   const toggleConcrete = () => {
@@ -91,8 +95,12 @@ export default function ClassNode({
 
   const handleDelete = (e: React.MouseEvent) => {
     e.stopPropagation();
-    setNodes((nds) => nds.filter((node) => node.id !== id));
-    setEdges((eds) => eds.filter((edge) => edge.source !== id && edge.target !== id));
+    if (onDelete) {
+      onDelete(id);
+    } else {
+      setNodes((nds) => nds.filter((node) => node.id !== id));
+      setEdges((eds) => eds.filter((edge) => edge.source !== id && edge.target !== id));
+    }
   };
 
   const COMMON_TYPES = [
