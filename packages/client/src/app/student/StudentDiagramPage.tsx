@@ -1,15 +1,15 @@
-"use client";
+﻿"use client";
 
 import DiagramCanvas from "@/components/diagram/DiagramCanvas";
 import ScaffoldingPanel from "@/components/ScaffoldingPanel";
+import FeedbackStrip from "@/components/FeedbackStrip";
+import UserBadge from "@/components/UserBadge";
 import { getRandomStudyCase, getStudyCaseById, compareCode } from "@/lib/api";
 import { useEffect, useRef, useState } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
-import { Shuffle, Code2, Unlock } from "lucide-react";
+import { Shuffle, Code2, Unlock, ArrowLeft } from "lucide-react";
 import ProjectExplorer from "@/components/ProjectExplorer";
 import JavaEditor from "@/components/JavaEditor";
-import OutputPanel from "@/components/OutputPanel";
-import { useSocket } from "@/hooks/useWebsocket";
 import { graderDiagram, } from "@/lib/api";
 import { useWorkspace } from "@/hooks/useWorkspace";
 import { randomUUID } from "crypto";
@@ -24,6 +24,15 @@ export default function StudentDiagramPage({ isNonScaffolding = false }: { isNon
         studentCategory: string,
         reason: string,
         submissionType?: "diagram" | "code",
+        scaffoldingLevel?: number,
+    } | null>(null);
+    const [diagramResult, setDiagramResult] = useState<{
+        score: number,
+        feedbacks: string[],
+        isPassed: boolean,
+        studentCategory: string,
+        reason: string,
+        scaffoldingLevel?: number,
     } | null>(null);
     const [stage, setStage] = useState<1 | 2 | 3>(3);
     const [studyCase, setStudyCase] = useState<any>(null);
@@ -78,7 +87,6 @@ export default function StudentDiagramPage({ isNonScaffolding = false }: { isNon
         evaluation: {
             submit_count: 0,
             mismatch_attempts: 0,
-            run_count: 0,
         }
     });
 
@@ -107,18 +115,6 @@ export default function StudentDiagramPage({ isNonScaffolding = false }: { isNon
         handleCodeChange,
         flattenFiles,
     } = useWorkspace();
-    const { output, isRunning, runJavaCode } = useSocket();
-    const handleRun = async () => {
-        runJavaCode(nodes, selectedId, flattenFiles);
-        logCodeActivity();
-        setCodeMetrics((prev) => ({
-            ...prev,
-            evaluation: {
-                ...prev.evaluation,
-                run_count: (prev.evaluation?.run_count || 0) + 1
-            }
-        }));
-    };
 
     // Initialize or reset coding start time when coding tab becomes active
     useEffect(() => {
@@ -358,7 +354,6 @@ export default function StudentDiagramPage({ isNonScaffolding = false }: { isNon
 
         // Hanya boleh melakukan injeksi/reset kerangka jika diagram masih sepenuhnya kosong
         if (currentNodes.length > 0 || currentEdges.length > 0) {
-            console.log("Diagram sudah berisi komponen (nodes/edges). Reset kanvas dan injeksi kerangka otomatis L1 dilewati.");
             return;
         }
 
@@ -403,8 +398,6 @@ export default function StudentDiagramPage({ isNonScaffolding = false }: { isNon
                 isNonScaffolding ? "CONTROL" : "EXPERIMENTAL"
             );
 
-            console.log("Grader result:", result);
-
             if (result && result.success) {
                 // 4. Sinkronisasikan balik jumlah attempt/mismatch ke state internal hook useDiagram
                 // Ini agar counter internal di hook tahu status kelulusan submisi ini
@@ -413,17 +406,25 @@ export default function StudentDiagramPage({ isNonScaffolding = false }: { isNon
                 // 5. MECHANISM RESET TIMEOUT UNTUK STOPPERS (Fading Trigger)
                 if (result.scaffolding?.shouldResetIdle) {
                     diagramRef.current.clearHistoricalIdleTime?.();
-                    console.log("Historical idle time trap flushed successfully.");
                 }
 
-                // Munculkan modal hasil evaluasi
-                setGradeResult({
+                // Hasil checker ditampilkan ringkas di strip kanvas sekaligus di modal hasil
+                setDiagramResult({
                     score: result.score / 100, // Normalized to 0-1
                     feedbacks: result.hints || [],
                     reason: result.scaffolding.reason || "",
                     isPassed: result.isPassed,
                     studentCategory: result.analytics.category,
+                    scaffoldingLevel: result.scaffolding?.level,
+                });
+                setGradeResult({
+                    score: result.score / 100,
+                    feedbacks: result.hints || [],
+                    reason: result.scaffolding.reason || "",
+                    isPassed: result.isPassed,
+                    studentCategory: result.analytics.category,
                     submissionType: "diagram",
+                    scaffoldingLevel: result.scaffolding?.level,
                 });
 
                 // 6. ADAPTIVE UI TRIGGER (Bahan analisis Bab 4 skripsi kamu)
@@ -435,7 +436,6 @@ export default function StudentDiagramPage({ isNonScaffolding = false }: { isNon
                         setActiveTab("diagram");
                     }
                     // Kondisikan tampilan UI berdasarkan level bantuan yang diberikan oleh server
-                    console.log(`Mahasiswa diarahkan ke Scaffolding Level: ${result.scaffolding?.level}`);
                     if (result.scaffolding?.level) {
                         setStage(result.scaffolding.level as 1 | 2 | 3);
                         setShowScaffolding(true);
@@ -481,8 +481,6 @@ export default function StudentDiagramPage({ isNonScaffolding = false }: { isNon
                 studyCase.answer_key.logic_rules,
                 isNonScaffolding ? "CONTROL" : "EXPERIMENTAL"
             );
-            console.log("Result:", result);
-
             if (result && result.success) {
                 // Update internal metrics matching
                 setCodeMetrics(prev => ({
@@ -491,8 +489,7 @@ export default function StudentDiagramPage({ isNonScaffolding = false }: { isNon
                         submit_count: (prev.evaluation?.submit_count || 0) + 1,
                         mismatch_attempts: result.isPassed
                             ? (prev.evaluation?.mismatch_attempts || 0)
-                            : (prev.evaluation?.mismatch_attempts || 0) + 1,
-                        run_count: prev.evaluation?.run_count || 0
+                            : (prev.evaluation?.mismatch_attempts || 0) + 1
                     }
                 }));
 
@@ -511,10 +508,10 @@ export default function StudentDiagramPage({ isNonScaffolding = false }: { isNon
                     isPassed: result.isPassed,
                     studentCategory: result.analytics?.category || "",
                     submissionType: "code",
+                    scaffoldingLevel: result.scaffolding?.level,
                 });
 
                 if (!result.isPassed) {
-                    console.log(`Mahasiswa diarahkan ke Scaffolding Level Koding: ${result.scaffolding?.level}`);
                     if (result.scaffolding?.level) {
                         setStage(result.scaffolding.level as 1 | 2 | 3);
                         setShowScaffolding(true);
@@ -550,6 +547,13 @@ export default function StudentDiagramPage({ isNonScaffolding = false }: { isNon
         <main className="flex h-screen w-screen overflow-hidden bg-[#020617] text-slate-300">
             <div className="w-86 h-full overflow-y-auto border-r border-slate-800 bg-[#0f172a] p-6 flex flex-col shadow-2xl">
 
+
+                <button
+                    onClick={() => router.push("/student/select")}
+                    className="flex items-center gap-2 text-slate-500 hover:text-white transition-colors mb-4 text-xs font-bold uppercase tracking-widest focus-visible:outline-2 focus-visible:outline-blue-400 rounded"
+                >
+                    <ArrowLeft className="w-4 h-4" /> Ganti Mode / Kasus
+                </button>
 
                 <div className="flex flex-col mb-6">
                     <h3 className="text-md font-semibold text-blue-600 "> Title:</h3>
@@ -630,6 +634,7 @@ export default function StudentDiagramPage({ isNonScaffolding = false }: { isNon
                     </div>
 
                     <div className="flex items-center gap-4">
+                        <UserBadge className="mr-2" />
                         <button
                             onClick={() => setShowScaffolding(!showScaffolding)}
                             className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-[10px] font-bold uppercase tracking-widest transition-all ${showScaffolding
@@ -651,6 +656,20 @@ export default function StudentDiagramPage({ isNonScaffolding = false }: { isNon
                         )}
                     </div>
                 </div>
+
+                {/* Strip hasil checker: diagram selalu terlihat di kanvas, kode di tab IDE */}
+                {activeTab === "diagram" ? (
+                    <FeedbackStrip
+                        hints={diagramResult?.feedbacks || []}
+                        score={diagramResult ? diagramResult.score * 100 : undefined}
+                        category={diagramResult?.studentCategory}
+                        level={diagramResult?.scaffoldingLevel}
+                        placeholder="Belum ada hasil pengecekan · submit diagram untuk melihat skor dan catatan"
+                        onContinue={diagramResult?.isPassed ? () => setActiveTab("code") : undefined}
+                    />
+                ) : (
+                    gradeResult?.submissionType === "code" && <FeedbackStrip hints={gradeResult.feedbacks} />
+                )}
 
                 {/* Workspace Content */}
                 <div className="flex-1 relative overflow-hidden">
@@ -680,11 +699,7 @@ export default function StudentDiagramPage({ isNonScaffolding = false }: { isNon
                                             code={currentFile.content || ""}
                                             fileName={currentFile.name}
                                             onCodeChange={handleCodeChangeWithMetrics}
-                                            onRun={handleRun}
                                         />
-                                        {/* <OutputPanel
-                                            output={output}
-                                        /> */}
                                     </div>
                                 ) : (
                                     <div className="flex-1 flex flex-col items-center justify-center text-slate-500 gap-3 bg-[#141414]">
@@ -724,7 +739,7 @@ export default function StudentDiagramPage({ isNonScaffolding = false }: { isNon
                             </div>
                             <p className="text-slate-400 uppercase tracking-widest text-xs font-bold">
                                 {gradeResult.submissionType === "code" && gradeResult.isPassed
-                                    ? "Excellent! Latihan Selesai 🎉"
+                                    ? "Excellent! Latihan Selesai ðŸŽ‰"
                                     : gradeResult.isPassed
                                         ? "Excellent! Task Completed"
                                         : "Keep Going! Almost There"}
@@ -758,7 +773,7 @@ export default function StudentDiagramPage({ isNonScaffolding = false }: { isNon
                                     }}
                                     className="w-full py-4 bg-gradient-to-r from-emerald-500 to-green-600 hover:from-emerald-400 hover:to-green-500 text-white rounded-2xl font-black text-sm uppercase tracking-wider transition-all shadow-xl shadow-green-500/20 flex items-center justify-center gap-2"
                                 >
-                                    <Unlock className="w-4 h-4 animate-bounce" />
+                                    <Unlock className="w-4 h-4" />
                                     <span>Unlock & Start Coding</span>
                                 </button>
                             )

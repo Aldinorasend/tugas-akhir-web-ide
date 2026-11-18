@@ -9,8 +9,6 @@ import { useParams, useRouter } from "next/navigation";
 import { Edit3, Info, ChevronRight, Save, Loader2, ArrowLeft, Code, Code2, Terminal, CheckCircle2, XCircle, AlertTriangle, X } from "lucide-react";
 import ProjectExplorer, { FileNode } from "@/components/ProjectExplorer";
 import JavaEditor from "@/components/JavaEditor";
-import OutputPanel from "@/components/OutputPanel";
-import { useSocket } from "@/hooks/useWebsocket";
 import { useWorkspace } from "@/hooks/useWorkspace";
 import { div } from "framer-motion/client";
 
@@ -67,10 +65,7 @@ export default function EditStudyCasePage() {
     handleDelete,
     handleRename,
     handleCodeChange,
-    flattenFiles,
   } = useWorkspace();
-
-  const { output, isRunning, runJavaCode } = useSocket();
 
   // Fetch Study Case
   useEffect(() => {
@@ -148,9 +143,6 @@ export default function EditStudyCasePage() {
     fetchStudyCase();
   }, [id, router, setNodes, setSelectedId]);
 
-  const handleRun = () => {
-    runJavaCode(nodes, selectedId, flattenFiles);
-  };
   const handleUpdate = async () => {
     setUpdating(true);
     try {
@@ -367,11 +359,7 @@ export default function EditStudyCasePage() {
                     code={currentFile.content || ""}
                     fileName={currentFile.name}
                     onCodeChange={handleCodeChange}
-                    onRun={handleRun}
                   />
-                  {/* <OutputPanel
-                    output={output}
-                  /> */}
                 </div>
               ) : (
                 <div className="flex-1 flex flex-col items-center justify-center text-slate-500 gap-3 bg-[#141414]">

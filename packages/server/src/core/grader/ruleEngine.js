@@ -95,7 +95,7 @@ export const compareDiagrams = (studentNodes = [], studentEdges = [], rules) => 
                 totalPossible += 1;
                 const isMatch = studentMethods.some(sMeth =>
                     sMeth.name?.toLowerCase() === rMeth.name?.toLowerCase() &&
-                    sMeth.type?.toLowerCase() === rMeth.type?.toLowerCase() &&
+                    sMeth.returnType?.toLowerCase() === rMeth.returnType?.toLowerCase() &&
                     sMeth.access?.toLowerCase() === rMeth.access?.toLowerCase()
                 );
                 if (isMatch) {

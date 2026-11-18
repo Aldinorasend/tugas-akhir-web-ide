@@ -8,6 +8,7 @@ yarn-debug.log*
 yarn-error.log*
 .pnpm-debug.log*
 .env*
+!.env.example
 
 # Java
 *.class
@@ -26,6 +27,11 @@ build/
 .idea/
 *.swp
 *.swo
+
+# Agent / AI tooling (lokal, bukan source project)
+.agents/
+.opencode/
+skills-lock.json
 
 # OS
 .DS_Store

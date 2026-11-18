@@ -4,11 +4,9 @@ import DiagramCanvas, { DiagramCanvasRef } from "@/components/diagram/DiagramCan
 import { createStudyCase } from "@/lib/api"
 
 import { useRef, useState, useEffect, useCallback } from "react";
-import { Rocket, Info, ChevronRight, ChevronDown, Save, Code, Code2, Terminal, CheckCircle2, XCircle, AlertTriangle, X } from "lucide-react";
+import { Rocket, Info, ChevronRight, ChevronDown, Save, Code, Code2, Terminal, CheckCircle2, XCircle, AlertTriangle, X, ArrowLeft } from "lucide-react";
 import ProjectExplorer, { FileNode } from "@/components/ProjectExplorer";
 import JavaEditor from "@/components/JavaEditor";
-import OutputPanel from "@/components/OutputPanel";
-import { useSocket } from "@/hooks/useWebsocket";
 import { useWorkspace } from "@/hooks/useWorkspace";
 import { useRouter } from "next/navigation";
 
@@ -63,15 +61,7 @@ export default function NewStudyCasePage() {
     handleDelete,
     handleRename,
     handleCodeChange,
-    flattenFiles,
   } = useWorkspace();
-
-  const { output, isRunning, runJavaCode } = useSocket();
-
-  const handleRun = () => {
-    runJavaCode(nodes, selectedId, flattenFiles);
-  };
-
 
   const handlePublish = async () => {
     setLoading(true);
@@ -130,6 +120,12 @@ export default function NewStudyCasePage() {
       {/* Left Panel: Study Case Editor */}
       <div className="w-96 h-full border-r border-slate-800 bg-[#0f172a] p-6 overflow-y-auto flex flex-col gap-8 shadow-2xl z-10 shrink-0">
         <div>
+          <button
+            onClick={() => router.push("/lecturer")}
+            className="flex items-center gap-2 text-slate-500 hover:text-white transition-colors mb-4 text-xs font-bold uppercase tracking-widest focus-visible:outline-2 focus-visible:outline-blue-400 rounded"
+          >
+            <ArrowLeft className="w-4 h-4" /> Back to List
+          </button>
           <div className="flex items-center gap-2 mb-1">
             <Rocket className="w-5 h-5 text-blue-500" />
             <h1 className="text-xl font-bold text-white tracking-tight">Create Case</h1>
@@ -287,10 +283,6 @@ export default function NewStudyCasePage() {
                     code={currentFile.content || ""}
                     fileName={currentFile.name}
                     onCodeChange={handleCodeChange}
-                    onRun={handleRun}
-                  />
-                  <OutputPanel
-                    output={output}
                   />
                 </div>
               ) : (

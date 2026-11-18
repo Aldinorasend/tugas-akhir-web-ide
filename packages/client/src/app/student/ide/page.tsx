@@ -4,7 +4,6 @@ import React, { useEffect, useRef, useState, useCallback } from "react";
 import JavaEditor from "@/components/JavaEditor";
 import ScaffoldingPanel from "@/components/ScaffoldingPanel";
 import ProjectExplorer, { FileNode } from "@/components/ProjectExplorer";
-import OutputPanel from "@/components/OutputPanel";
 import { supabase } from "@/lib/supabase";
 import { useWorkspace } from "@/hooks/useWorkspace";
 
@@ -15,63 +14,16 @@ export default function StudentIDE() {
     selectedId,
     setSelectedId,
     currentFile,
-    findNode,
     handleToggleFolder,
     handleAddFile,
     handleAddFolder,
     handleDelete,
     handleRename,
     handleCodeChange,
-    flattenFiles,
   } = useWorkspace([]);
 
-  const socketRef = useRef<WebSocket | null>(null);
-  const [output, setOutput] = useState<string>("The output will be shown here");
-  const [loading, setLoading] = useState<boolean>(false);
   const [studyCase, setStudyCase] = useState<any>(null);
   const [loadingCase, setLoadingCase] = useState<boolean>(true);
-
-  useEffect(() => {
-    let socket: WebSocket;
-    let reconnectTimeout: NodeJS.Timeout;
-
-    const connect = () => {
-      console.log("🔌 Connecting to WebSocket...");
-      socket = new WebSocket("ws://localhost:8080");
-
-      socket.onopen = () => {
-        console.log("✅ Connected to WebSocket");
-        socketRef.current = socket;
-      };
-
-      socket.onmessage = (event) => {
-        const msg = JSON.parse(event.data);
-        if (msg.type === "output" || msg.type === "error") {
-          setOutput((prev) => prev + msg.data);
-        }
-        if (msg.type === "end") {
-          setLoading(false);
-        }
-      };
-
-      socket.onerror = (error) => {
-        console.error("❌ WebSocket Error:", error);
-      };
-
-      socket.onclose = () => {
-        console.log("🔌 WebSocket disconnected. Reconnecting in 3s...");
-        socketRef.current = null;
-        reconnectTimeout = setTimeout(connect, 3000);
-      };
-    };
-
-    connect();
-
-    return () => {
-      if (socket) socket.close();
-      if (reconnectTimeout) clearTimeout(reconnectTimeout);
-    };
-  }, []);
 
   useEffect(() => {
     const loadCaseAndFiles = async () => {
@@ -156,53 +108,6 @@ export default function StudentIDE() {
     loadCaseAndFiles();
   }, [setNodes, setSelectedId]);
 
-  const runCode = () => {
-    if (!socketRef.current || socketRef.current.readyState !== WebSocket.OPEN) {
-      console.error("❌ WebSocket not connected");
-      return;
-    }
-
-    setOutput("Output:\n");
-    setLoading(true);
-
-    const filesToSend = flattenFiles(nodes);
-
-    const currentFileNode = findNode(nodes, selectedId);
-    const currentDirPath = selectedId.includes("/") 
-      ? selectedId.split("/").slice(0, -1).join("/") 
-      : "";
-
-    let mainFile = filesToSend.find(f => f.path === (currentDirPath ? `${currentDirPath}/Main.java` : "Main.java"));
-    
-    if (!mainFile) {
-      mainFile = filesToSend.find(f => f.path.endsWith("Main.java"));
-    }
-    
-    let mainClass = "Main";
-    if (mainFile) {
-      mainClass = mainFile.path
-        .replace(/\.java$/, "")
-        .replace(/\//g, ".");
-    } else if (filesToSend.length > 0) {
-      mainClass = filesToSend[0].path
-        .replace(/\.java$/, "")
-        .replace(/\//g, ".");
-    }
-
-    socketRef.current.send(
-      JSON.stringify({
-        type: "run",
-        mainClass,
-        files: filesToSend,
-      })
-    );
-  };
-
-  const sendInput = (value: string) => {
-    socketRef.current?.send(JSON.stringify({ type: "input", data: value }));
-    setOutput((prev) => prev + value + "\n");
-  };
-
   if (loadingCase) {
     return (
       <div className="h-screen w-screen flex flex-col items-center justify-center bg-[#020617] text-slate-400 gap-4">
@@ -230,23 +135,6 @@ export default function StudentIDE() {
           code={currentFile?.content || ""}
           fileName={currentFile?.name || "No file selected"}
           onCodeChange={handleCodeChange}
-          onRun={runCode}
-        />
-
-        <OutputPanel
-          output={output}
-          onClear={() => setOutput("")}
-        />
-
-        <input
-          placeholder="Type input and press Enter..."
-          className="bg-black text-green-400 p-2 border-t border-gray-700 outline-none"
-          onKeyDown={(e) => {
-            if (e.key === "Enter") {
-              sendInput(e.currentTarget.value);
-              e.currentTarget.value = "";
-            }
-          }}
         />
       </div>
 

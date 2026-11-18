@@ -69,6 +69,12 @@ export const gradeAndCompareCode = async (req, res) => {
         // =================================================================
         // 5. ATOMIC UPSERT: Simpan Metrik Kumulatif ke code_phase_metrics
         // =================================================================
+        // TODO(BUSINESS RULE): 1 mahasiswa = 1 pengerjaan per study case.
+        // Upsert menimpa baris yang sama (user_id, exercise_id) sehingga tidak
+        // duplikat, tapi belum ada validasi bahwa exerciseId yang dikirim client
+        // memang milik mahasiswa ini. CATATAN: logic_rules (ground truth) juga
+        // masih dikirim dari client — jika business rules berubah, pindahkan
+        // penentuan rules & guard attempt sepenuhnya ke sisi server di sini.
         // Kita tidak memakai array JSON logs lagi, semua metrik granular langsung masuk kolom
         const { data: upsertedMetric, error: updateError } = await supabase
             .from("code_phase_metrics")

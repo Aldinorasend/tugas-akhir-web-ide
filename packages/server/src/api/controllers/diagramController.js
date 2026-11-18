@@ -68,6 +68,13 @@ export const gradeAndLogDiagram = async (req, res) => {
         // =================================================================
         // 5. ATOMIC UPSERT: Simpan Metrik Kumulatif ke diagram_phase_metrics
         // =================================================================
+        // TODO(BUSINESS RULE): 1 mahasiswa = 1 pengerjaan per study case.
+        // Saat ini upsert hanya menimpa baris metrik yang sama (user_id, exercise_id),
+        // sehingga data tidak duplikat. Tapi BELUM ada guard bahwa exerciseId yang
+        // dikirim client valid/diizinkan untuk mahasiswa ini (tidak ada mekanisme
+        // assignment student↔study case). Jika aturan berubah (mis. satu attempt
+        // final, limit attempt, atau wajib assignment), guard-nya ditaruh di sini
+        // SEBELUM upsert.
         const { error: updateError } = await supabase
             .from("diagram_phase_metrics")
             .upsert({

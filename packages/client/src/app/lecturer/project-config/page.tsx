@@ -1,9 +1,8 @@
 "use client";
 
-import React, { useEffect, useRef, useState, useCallback } from "react";
+import React, { useEffect, useState, useCallback } from "react";
 import JavaEditor from "@/components/JavaEditor";
 import ProjectExplorer, { FileNode } from "@/components/ProjectExplorer";
-import OutputPanel from "@/components/OutputPanel";
 import { supabase } from "@/lib/supabase";
 import { ChevronLeft, Save, Code2, FolderCode, FileJson, CheckCircle2, CloudLightning } from "lucide-react";
 
@@ -15,9 +14,6 @@ export default function ProjectConfigPage() {
   const [studyCase, setStudyCase] = useState<any>(null);
   const [mode, setMode] = useState<"new" | "edit">("new");
   const [saveStatus, setSaveStatus] = useState<"idle" | "success" | "error">("idle");
-  const [output, setOutput] = useState<string>("The output will be shown here");
-  const [running, setRunning] = useState<boolean>(false);
-  const socketRef = useRef<WebSocket | null>(null);
 
   const findNode = useCallback((list: FileNode[], id: string): FileNode | null => {
     for (const node of list) {
@@ -31,103 +27,6 @@ export default function ProjectConfigPage() {
   }, []);
 
   const currentFile = findNode(nodes, selectedId);
-
-  useEffect(() => {
-    let socket: WebSocket;
-    let reconnectTimeout: NodeJS.Timeout;
-
-    const connect = () => {
-      console.log("🔌 Connecting to WebSocket from Lecturer Studio...");
-      socket = new WebSocket("ws://localhost:8080");
-
-      socket.onopen = () => {
-        console.log("✅ Lecturer connected to WebSocket");
-        socketRef.current = socket;
-      };
-
-      socket.onmessage = (event) => {
-        const msg = JSON.parse(event.data);
-        if (msg.type === "output" || msg.type === "error") {
-          setOutput((prev) => prev + msg.data);
-        }
-        if (msg.type === "end") {
-          setRunning(false);
-        }
-      };
-
-      socket.onerror = (error) => {
-        console.error("❌ WebSocket Error:", error);
-      };
-
-      socket.onclose = () => {
-        console.log("🔌 WebSocket disconnected. Reconnecting in 3s...");
-        socketRef.current = null;
-        reconnectTimeout = setTimeout(connect, 3000);
-      };
-    };
-
-    connect();
-
-    return () => {
-      if (socket) socket.close();
-      clearTimeout(reconnectTimeout);
-    };
-  }, []);
-
-  const flattenFiles = (list: FileNode[], pathPrefix = ""): { path: string; content: string }[] => {
-    let result: { path: string; content: string }[] = [];
-    for (const node of list) {
-      const currentPath = node.id === "root" ? "" : (pathPrefix ? `${pathPrefix}/${node.name}` : node.name);
-
-      if (node.type === "file") {
-        result.push({ path: currentPath, content: node.content || "" });
-      } else if (node.children) {
-        result = [...result, ...flattenFiles(node.children, currentPath)];
-      }
-    }
-    return result;
-  };
-
-  const runCode = () => {
-    if (!socketRef.current || socketRef.current.readyState !== WebSocket.OPEN) {
-      alert("Execution server is offline or connecting. Please wait a moment.");
-      return;
-    }
-
-    setOutput("Output:\n");
-    setRunning(true);
-
-    const filesToSend = flattenFiles(nodes);
-
-    const currentDirPath = selectedId.includes("/")
-      ? selectedId.split("/").slice(0, -1).join("/")
-      : "";
-
-    let mainFile = filesToSend.find(f => f.path === (currentDirPath ? `${currentDirPath}/Main.java` : "Main.java"));
-
-    if (!mainFile) {
-      mainFile = filesToSend.find(f => f.path.endsWith("Main.java"));
-    }
-
-    let mainClass = "Main";
-    if (mainFile) {
-      mainClass = mainFile.path
-        .replace(/\.java$/, "")
-        .replace(/\//g, ".");
-    } else if (filesToSend.length > 0) {
-      mainClass = filesToSend[0].path
-        .replace(/\.java$/, "")
-        .replace(/\//g, ".");
-    }
-
-    socketRef.current.send(
-      JSON.stringify({
-        type: "run",
-        mainClass,
-        files: filesToSend,
-      })
-    );
-  };
 
   useEffect(() => {
     const initializeWorkspace = async () => {
@@ -521,12 +420,7 @@ export default function ProjectConfigPage() {
                 code={currentFile.content || ""}
                 fileName={currentFile.name}
                 onCodeChange={handleCodeChange}
-                onRun={runCode}
               />
-              {/* <OutputPanel
-                output={output}
-                onClear={() => setOutput("")}
-              /> */}
             </div>
           ) : (
             <div className="flex-1 flex flex-col items-center justify-center text-slate-500 gap-3 border-l border-white/5 bg-[#141414]">

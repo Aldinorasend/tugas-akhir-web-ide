@@ -1,3 +1,4 @@
+import './config/env.js'; // WAJIB paling atas: load .env dari root monorepo
 import express from 'express';
 import cors from 'cors';
 import { createServer } from 'http';
@@ -5,12 +6,16 @@ import studyCaseRoutes from './api/routes/studyCaseRoutes.js';
 import graderRules from './api/routes/graderRules.js';
 import authRoutes from './api/routes/authRoutes.js';
 import lecturerDashboardRoutes from './api/routes/lecturerDashboardRoutes.js';
+import healthRoutes from './api/routes/healthRoutes.js';
 
 const app = express();
 
 // Middleware
 app.use(cors());
 app.use(express.json());
+
+// Health & Readiness probes (tanpa auth, di-mount di root)
+app.use('/', healthRoutes);
 
 // Route REST API
 app.use('/api/auth', authRoutes);

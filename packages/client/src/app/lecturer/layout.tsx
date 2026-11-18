@@ -3,8 +3,9 @@
 import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { LayoutGrid, PlusCircle, LogOut, Settings, BookOpen, ShieldAlert, ArrowRight } from "lucide-react";
+import { LayoutGrid, LogOut, BookOpen, ShieldAlert, ArrowRight } from "lucide-react";
 import { cn } from "@/lib/utils";
+import UserBadge from "@/components/UserBadge";
 
 export default function LecturerLayout({
   children,
@@ -48,16 +49,10 @@ export default function LecturerLayout({
 
   const navItems = [
     {
-      label: "Study Cases",
+      label: "Study Case",
       href: "/lecturer",
       icon: BookOpen,
-      active: pathname === "/lecturer",
-    },
-    {
-      label: "New Case",
-      href: "/lecturer/new",
-      icon: PlusCircle,
-      active: pathname === "/lecturer/new",
+      active: pathname === "/lecturer" || pathname.startsWith("/lecturer/edit") || pathname === "/lecturer/new",
     },
     {
       label: "Student Progress",
@@ -87,7 +82,7 @@ export default function LecturerLayout({
 
         <div className="w-full max-w-md bg-slate-900 border border-slate-800 rounded-3xl p-8 shadow-2xl text-center relative">
           <div className="bg-rose-500/10 p-4 rounded-2xl w-fit mx-auto mb-6 text-rose-400 border border-rose-500/20">
-            <ShieldAlert size={40} className="animate-bounce" />
+            <ShieldAlert size={40} />
           </div>
 
           <h2 className="text-2xl font-black tracking-tight mb-3">Akses Ditolak</h2>
@@ -140,11 +135,6 @@ export default function LecturerLayout({
               <div className="absolute left-full ml-4 px-3 py-1 bg-slate-800 text-white text-xs rounded-lg opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity whitespace-nowrap z-50 border border-slate-700 shadow-xl">
                 {item.label}
               </div>
-              {/* Active Indicator */}
-              {item.active && (
-                <div className="absolute left-0 top-1/4 bottom-1/4 w-1 bg-blue-500 rounded-r-full shadow-[0_0_10px_rgba(59,130,246,0.5)]" />
-              )}
-
             </Link>
           ))}
         </nav>
@@ -161,8 +151,14 @@ export default function LecturerLayout({
       </aside>
 
       {/* Main Content Area */}
-      <main className="flex-1 h-full overflow-hidden relative">
-        {children}
+      <main className="flex-1 h-full flex flex-col overflow-hidden relative">
+        {/* Strip sesi login */}
+        <div className="h-10 shrink-0 border-b border-slate-800 bg-[#020617] flex items-center justify-end px-6">
+          <UserBadge />
+        </div>
+        <div className="flex-1 min-h-0 overflow-hidden">
+          {children}
+        </div>
       </main>
     </div>
   );
